@@ -1,5 +1,5 @@
 import { useRef, useState, type JSX } from 'react'
-import { parseMusicXml } from '../utils/musicXmlParser'
+import { parseGuitarPro } from '../utils/guitarProParser'
 import type { AnalysisResult } from '../types'
 
 type Props = {
@@ -7,15 +7,18 @@ type Props = {
   defaultFilename?: string
 }
 
-export function MusicXmlDropzone({ onAnalysis, defaultFilename }: Props): JSX.Element {
+const GP_ACCEPT = '.gp,.gp3,.gp4,.gp5,.gpx,.ptb'
+const GP_RE = /\.(gp|gp3|gp4|gp5|gpx|ptb)$/i
+
+export function GuitarProDropzone({ onAnalysis, defaultFilename }: Props): JSX.Element {
   const [isDragging, setIsDragging] = useState(false)
   const [loadedFilename, setLoadedFilename] = useState<string | null>(defaultFilename ?? null)
   const [error, setError] = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
   function processFile(file: File): void {
-    if (!/\.(musicxml|xml)$/i.test(file.name)) {
-      setError('Please load a MusicXML file (.musicxml or .xml)')
+    if (!GP_RE.test(file.name)) {
+      setError('Please load a Guitar Pro file (.gp, .gp3, .gp4, .gp5, .gpx, .ptb)')
       return
     }
     setError(null)
@@ -23,17 +26,16 @@ export function MusicXmlDropzone({ onAnalysis, defaultFilename }: Props): JSX.El
     const reader = new FileReader()
     reader.onload = (e) => {
       try {
-        const text = e.target!.result as string
-        const result = parseMusicXml(text)
+        const buffer = e.target!.result as ArrayBuffer
+        const result = parseGuitarPro(buffer)
         setLoadedFilename(file.name)
         onAnalysis(result)
       } catch (err) {
-        const message = err instanceof Error ? err.message : 'Could not parse this MusicXML file.'
+        const message = err instanceof Error ? err.message : 'Could not parse this Guitar Pro file.'
         setError(message)
       }
     }
-    // MusicXML is text-based XML — read as UTF-8 string, not ArrayBuffer.
-    reader.readAsText(file, 'UTF-8')
+    reader.readAsArrayBuffer(file)
   }
 
   function onDragOver(e: React.DragEvent): void {
@@ -73,12 +75,12 @@ export function MusicXmlDropzone({ onAnalysis, defaultFilename }: Props): JSX.El
       onDrop={onDrop}
       onClick={() => inputRef.current?.click()}
       role="button"
-      aria-label="MusicXML file drop zone"
+      aria-label="Guitar Pro file drop zone"
     >
       <input
         ref={inputRef}
         type="file"
-        accept=".musicxml,.xml"
+        accept={GP_ACCEPT}
         className="midi-dropzone-input"
         onChange={onInputChange}
       />
@@ -91,9 +93,11 @@ export function MusicXmlDropzone({ onAnalysis, defaultFilename }: Props): JSX.El
         </div>
       ) : (
         <div className="midi-dropzone-content">
-          <span className="midi-dropzone-icon">♬</span>
-          <span className="midi-dropzone-label">Drop a MusicXML file here</span>
-          <span className="midi-dropzone-hint">or click to browse — .musicxml .xml</span>
+          <span className="midi-dropzone-icon">🎸</span>
+          <span className="midi-dropzone-label">Drop a Guitar Pro file here</span>
+          <span className="midi-dropzone-hint">
+            or click to browse — .gp .gp3 .gp4 .gp5 .gpx .ptb
+          </span>
         </div>
       )}
 

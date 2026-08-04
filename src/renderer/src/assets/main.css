@@ -228,23 +228,125 @@
   gap: var(--space-xs);
 }
 
-.analysis-stat .label {
+.stat-label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
   font-size: var(--font-size-sm);
   color: var(--color-text-muted);
   text-transform: uppercase;
   letter-spacing: 1px;
 }
 
-.analysis-stat .value {
+.stat-value {
   font-size: var(--font-size-lg);
   font-weight: 600;
   color: var(--color-text-primary);
 }
 
-.analysis-stat .value.empty {
+/* "edited" badge next to label when user has changed a detected value */
+.badge-edited {
+  display: inline-block;
+  padding: 1px 5px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--color-accent);
+  border: 1px solid var(--color-accent);
+  border-radius: 3px;
+  line-height: 1.4;
+  opacity: 0.85;
+}
+
+/* ── BPM Control ──────────────────────────────────────────── */
+.bpm-control {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.btn-bpm-step {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: none;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
   color: var(--color-text-muted);
-  font-weight: 400;
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  user-select: none;
+  transition:
+    border-color 0.15s ease,
+    color 0.15s ease;
+  -webkit-app-region: no-drag;
+  flex-shrink: 0;
+}
+
+.btn-bpm-step:hover {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+.bpm-input {
+  width: 60px;
+  padding: 3px var(--space-xs);
+  background-color: var(--color-bg-input);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-primary);
   font-size: var(--font-size-base);
+  font-weight: 600;
+  text-align: center;
+  outline: none;
+  -webkit-app-region: no-drag;
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+.bpm-input::-webkit-outer-spin-button,
+.bpm-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+}
+
+.bpm-input:focus {
+  border-color: var(--color-accent);
+}
+
+/* ── Time Signature Control ───────────────────────────────── */
+.timesig-control {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.timesig-select {
+  padding: 3px var(--space-xs);
+  background-color: var(--color-bg-input);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-base);
+  font-weight: 600;
+  text-align: center;
+  cursor: pointer;
+  outline: none;
+  -webkit-app-region: no-drag;
+}
+
+.timesig-select:focus {
+  border-color: var(--color-accent);
+}
+
+.timesig-sep {
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  color: var(--color-text-muted);
+  line-height: 1;
 }
 
 /* ── MIDI Dropzone ────────────────────────────────────────── */
@@ -335,6 +437,24 @@
   flex-shrink: 0; /* don't let it grow or shrink — fixed height */
 }
 
+/* ── Groove Style Selector ───────────────────────────────── */
+.groove-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  margin-bottom: var(--space-sm);
+}
+
+.groove-label {
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
 .export-row {
   display: flex;
   align-items: center;
@@ -344,6 +464,13 @@
 .export-error {
   font-size: var(--font-size-sm);
   color: var(--color-accent);
+}
+
+.export-success {
+  font-size: var(--font-size-sm);
+  color: #4caf50;
+  font-family: 'Consolas', 'Courier New', monospace;
+  word-break: break-all;
 }
 
 /* ── Export Button ────────────────────────────────────────── */
@@ -371,4 +498,98 @@
 .btn-export:disabled {
   background-color: var(--color-text-muted);
   cursor: not-allowed;
+}
+
+/* Pulse animation while generating */
+@keyframes pulse-opacity {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+
+.btn-export--generating {
+  animation: pulse-opacity 1.1s ease-in-out infinite;
+  cursor: not-allowed;
+}
+
+/* ── Clear Button (Analysis panel header) ─────────────────── */
+.btn-clear {
+  padding: 2px var(--space-sm);
+  background: none;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    color 0.15s ease;
+  -webkit-app-region: no-drag;
+}
+
+.btn-clear:hover {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+/* ── Parse Error (Input panel, below mode tabs) ───────────── */
+.parse-error {
+  font-size: var(--font-size-sm);
+  color: var(--color-accent);
+  margin-bottom: var(--space-sm);
+}
+
+/* ── Analysis Empty State ─────────────────────────────────── */
+.analysis-empty {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  line-height: 1.6;
+}
+
+/* ── Global Drag-and-Drop Overlay ─────────────────────────── */
+.drop-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(10, 10, 14, 0.82);
+  backdrop-filter: blur(4px);
+  pointer-events: none; /* let the drop event pass through to the .app div */
+}
+
+.drop-overlay-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-xl);
+  border: 2px dashed var(--color-accent);
+  border-radius: var(--radius-lg);
+  background-color: rgba(233, 69, 96, 0.06);
+}
+
+.drop-overlay-icon {
+  font-size: 48px;
+  color: var(--color-accent);
+  line-height: 1;
+}
+
+.drop-overlay-label {
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+  color: var(--color-text-primary);
+  letter-spacing: 0.5px;
+}
+
+.drop-overlay-hint {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
 }

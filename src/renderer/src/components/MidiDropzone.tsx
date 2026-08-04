@@ -5,11 +5,12 @@ import type { AnalysisResult } from '../types'
 
 type Props = {
   onAnalysis: (result: AnalysisResult) => void
+  defaultFilename?: string
 }
 
-export function MidiDropzone({ onAnalysis }: Props): JSX.Element {
+export function MidiDropzone({ onAnalysis, defaultFilename }: Props): JSX.Element {
   const [isDragging, setIsDragging] = useState(false)
-  const [loadedFilename, setLoadedFilename] = useState<string | null>(null)
+  const [loadedFilename, setLoadedFilename] = useState<string | null>(defaultFilename ?? null)
   const [error, setError] = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -50,6 +51,7 @@ export function MidiDropzone({ onAnalysis }: Props): JSX.Element {
 
   function onDrop(e: React.DragEvent): void {
     e.preventDefault()
+    e.stopPropagation() // prevent global drop handler from also firing
     setIsDragging(false)
     const file = e.dataTransfer.files[0]
     if (file) processFile(file)

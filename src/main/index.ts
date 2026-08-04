@@ -1,5 +1,6 @@
-import { app, shell, BrowserWindow, ipcMain } from 'electron'
+import { app, shell, BrowserWindow, ipcMain, dialog } from 'electron'
 import { join } from 'path'
+import { writeFile } from 'fs/promises'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 
@@ -49,8 +50,32 @@ app.whenReady().then(() => {
     optimizer.watchWindowShortcuts(window)
   })
 
-  // IPC test
-  ipcMain.on('ping', () => console.log('pong'))
+  ipcMain.handle('export-session', async (event, payload) => {
+    const win = BrowserWindow.fromWebContents(event.sender)
+    const picked = await dialog.showOpenDialog(win!, {
+      title: 'Choose export folder',
+      buttonLabel: 'Export Here',
+      properties: ['openDirectory', 'createDirectory']
+    })
+
+    if (picked.canceled || picked.filePaths.length === 0) {
+      return { canceled: true }
+    }
+
+    const folder = picked.filePaths[0]
+    try {
+      await Promise.all([
+        writeFile(join(folder, 'guitar_di.wav'), Buffer.from(payload.guitarDiWav)),
+        writeFile(join(folder, 'drum_track.mid'), Buffer.from(payload.drumMidi)),
+        writeFile(join(folder, 'bass_track.mid'), Buffer.from(payload.bassMidi)),
+        writeFile(join(folder, 'session.txt'), payload.sessionTxt, 'utf-8')
+      ])
+      return { canceled: false, folder }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Write failed'
+      return { canceled: false, folder, error: message }
+    }
+  })
 
   createWindow()
 

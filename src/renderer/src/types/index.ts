@@ -7,6 +7,11 @@ export type Note = {
   velocity: number // 0–127; parsers that lack velocity data default to 100
 }
 
+export type TimeSig = {
+  numerator: number
+  denominator: number
+}
+
 export type AnalysisResult = {
   bpm: number
   timeSig: string // e.g. "4/4" or "3/4"
