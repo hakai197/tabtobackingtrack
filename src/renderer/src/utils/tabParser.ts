@@ -1,9 +1,12 @@
 import { detectKey } from './keyDetection'
 import type { AnalysisResult, Note } from '../types'
 
-// Matches a guitar tab string line: optional whitespace, string label, optional space, |, content
-// e.g. "e|--0---3---5--|"  or  "E |--5---7---|"
-const TAB_LINE_RE = /^\s*([eEbBgGdDaA])\s*\|(.+)$/
+// Matches a guitar tab string line in two common formats:
+//   Ultimate Guitar:  e|--0---3---5--|     (pipe separator)
+//   Dash format:      f-5\4-4-4-4-4---     (dash separator, no pipe)
+// The separator is either | or - (dash at start of character class = literal dash).
+// Note names cover all 7 letters a–g to support non-standard tunings.
+const TAB_LINE_RE = /^\s*([a-gA-G])\s*[-|](.+)$/
 
 // Seconds-per-beat constants for converting column positions to time.
 // We treat each unique beat position (column where any string has a note) as one quarter note.
@@ -19,6 +22,9 @@ function extractBpm(text: string): number {
 }
 
 // Map the string label character to the open-string MIDI note.
+// Standard guitar strings (E A D G B e) use exact values.
+// Additional note names (C, F) are mapped to the nearest musically reasonable octave
+// so that key detection works correctly on alternate-tuned and non-standard instruments.
 // The `blockHasLowercaseE` flag disambiguates uppercase E:
 //   - If the block also has a lowercase 'e' (high e), then 'E' must be low E (40).
 //   - If there is no 'e' in the block, treat 'E' as high e (64) as a fallback.
@@ -32,9 +38,15 @@ function getMidiBase(label: string, blockHasLowercaseE: boolean): number {
     case 'G':
     case 'g':
       return 55 // G3
+    case 'F':
+    case 'f':
+      return 53 // F3
     case 'D':
     case 'd':
       return 50 // D3
+    case 'C':
+    case 'c':
+      return 48 // C3
     case 'A':
     case 'a':
       return 45 // A2
@@ -100,7 +112,9 @@ export function parseTab(text: string): AnalysisResult {
   const blocks = findTabBlocks(lines)
 
   if (blocks.length === 0) {
-    throw new Error('No guitar tab found. Paste a standard 6-string tab in Ultimate Guitar format.')
+    throw new Error(
+      'No tab found. Paste a 6-string tab using either pipe format (e|--0--|) or dash format (e-0--).'
+    )
   }
 
   const allNotes: Note[] = []
@@ -108,7 +122,8 @@ export function parseTab(text: string): AnalysisResult {
 
   for (const block of blocks) {
     // Detect whether any line uses lowercase 'e' to disambiguate high vs low E.
-    const blockHasLowercaseE = block.some((line) => /^\s*e\s*\|/.test(line))
+    // Handles both pipe format (e|) and dash format (e-).
+    const blockHasLowercaseE = block.some((line) => /^\s*e\s*[-|]/.test(line))
 
     // Parse each string's notes.
     const stringData: Array<{ midiBase: number; entries: Array<[number, number]> }> = []
