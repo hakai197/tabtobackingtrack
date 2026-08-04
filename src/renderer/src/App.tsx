@@ -3,9 +3,10 @@ import './assets/base.css'
 import './assets/main.css'
 import { MidiDropzone } from './components/MidiDropzone'
 import { TabInput } from './components/TabInput'
+import { MusicXmlDropzone } from './components/MusicXmlDropzone'
 import type { AnalysisResult } from './types'
 
-type InputMode = 'midi' | 'tab'
+type InputMode = 'midi' | 'tab' | 'musicxml'
 
 function App(): JSX.Element {
   const [inputMode, setInputMode] = useState<InputMode>('midi')
@@ -49,12 +50,21 @@ function App(): JSX.Element {
                 >
                   Tab
                 </button>
+                <button
+                  type="button"
+                  className={`input-mode-tab ${inputMode === 'musicxml' ? 'active' : ''}`}
+                  onClick={() => switchMode('musicxml')}
+                >
+                  MusicXML
+                </button>
               </div>
             </div>
             {inputMode === 'midi' ? (
               <MidiDropzone onAnalysis={setAnalysis} />
-            ) : (
+            ) : inputMode === 'tab' ? (
               <TabInput onAnalysis={setAnalysis} />
+            ) : (
+              <MusicXmlDropzone onAnalysis={setAnalysis} />
             )}
           </section>
 
