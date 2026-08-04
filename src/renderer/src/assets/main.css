@@ -1,0 +1,363 @@
+/* ── App Shell ────────────────────────────────────────────── */
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background-color: var(--color-bg-primary);
+  overflow: hidden;
+}
+
+/* ── Header ───────────────────────────────────────────────── */
+.app-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-md) var(--space-lg);
+  background-color: var(--color-bg-secondary);
+  border-bottom: 1px solid var(--color-border);
+  /* Allows the user to drag the window by the header */
+  -webkit-app-region: drag;
+}
+
+.app-header h1 {
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  color: var(--color-text-primary);
+  letter-spacing: 0.5px;
+}
+
+.app-header .accent {
+  color: var(--color-accent);
+}
+
+/* ── Main Content Area ────────────────────────────────────── */
+.app-body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  gap: var(--space-md);
+  padding: var(--space-md);
+  overflow: hidden;
+}
+
+/* ── Top Row (Input + Analysis side by side) ──────────────── */
+.app-top-row {
+  display: flex;
+  flex: 1;
+  gap: var(--space-md);
+  min-height: 0; /* important: prevents flex children from overflowing */
+}
+
+/* ── Panels (shared styles for Input and Analysis) ────────── */
+.panel {
+  display: flex;
+  flex-direction: column;
+  background-color: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-md);
+  overflow: hidden;
+}
+
+.panel-title {
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-md);
+  padding-bottom: var(--space-sm);
+  border-bottom: 1px solid var(--color-border);
+}
+
+/* ── Input Panel (left, wider) ────────────────────────────── */
+.panel-input {
+  flex: 2; /* takes up 2/3 of the top row */
+}
+
+/* ── Panel Header (title + mode toggle row) ───────────────── */
+/* Replaces the plain .panel-title when a toggle is present.   */
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-md);
+  padding-bottom: var(--space-sm);
+  border-bottom: 1px solid var(--color-border);
+}
+
+/* When inside .panel-header, the title has no own bottom border/margin. */
+.panel-header .panel-title {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+/* ── Input Mode Tab Buttons (MIDI | Tab | …) ──────────────── */
+.input-mode-tabs {
+  display: flex;
+  gap: 4px;
+}
+
+.input-mode-tab {
+  padding: 3px var(--space-sm);
+  background: none;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    color 0.15s ease,
+    background-color 0.15s ease;
+  -webkit-app-region: no-drag;
+}
+
+.input-mode-tab:hover {
+  border-color: var(--color-text-muted);
+  color: var(--color-text-primary);
+}
+
+.input-mode-tab.active {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+  background-color: rgba(233, 69, 96, 0.08);
+}
+
+/* ── Tab Text Input ───────────────────────────────────────── */
+.tab-input {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  gap: var(--space-sm);
+  min-height: 0;
+}
+
+.tab-textarea {
+  flex: 1;
+  min-height: 0;
+  padding: var(--space-sm);
+  background-color: var(--color-bg-input);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text-primary);
+  font-family: 'Consolas', 'Courier New', monospace;
+  font-size: var(--font-size-sm);
+  line-height: 1.6;
+  resize: none;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.tab-textarea::placeholder {
+  color: var(--color-text-muted);
+  opacity: 0.6;
+}
+
+.tab-textarea:focus {
+  border-color: var(--color-text-muted);
+}
+
+.tab-input-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-md);
+  flex-shrink: 0;
+}
+
+.tab-input-error {
+  flex: 1;
+  font-size: var(--font-size-sm);
+  color: var(--color-accent);
+}
+
+/* Secondary action button — smaller than the main export button */
+.btn-parse {
+  padding: var(--space-xs) var(--space-md);
+  background-color: transparent;
+  color: var(--color-accent);
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  border: 1px solid var(--color-accent);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
+  -webkit-app-region: no-drag;
+  white-space: nowrap;
+}
+
+.btn-parse:hover {
+  background-color: var(--color-accent);
+  color: white;
+}
+
+.btn-parse:disabled {
+  border-color: var(--color-text-muted);
+  color: var(--color-text-muted);
+  cursor: not-allowed;
+}
+
+.btn-parse:disabled:hover {
+  background-color: transparent;
+  color: var(--color-text-muted);
+}
+
+/* ── Analysis Panel (right, narrower) ────────────────────── */
+.panel-analysis {
+  flex: 1; /* takes up 1/3 of the top row */
+}
+
+/* ── Analysis Stats Grid ──────────────────────────────────── */
+.analysis-grid {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.analysis-stat {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.analysis-stat .label {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.analysis-stat .value {
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.analysis-stat .value.empty {
+  color: var(--color-text-muted);
+  font-weight: 400;
+  font-size: var(--font-size-base);
+}
+
+/* ── MIDI Dropzone ────────────────────────────────────────── */
+.midi-dropzone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1; /* fills remaining height inside the Input panel */
+  border: 2px dashed var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-xl);
+  cursor: pointer;
+  text-align: center;
+  transition:
+    border-color 0.2s ease,
+    background-color 0.2s ease;
+  -webkit-app-region: no-drag;
+}
+
+.midi-dropzone:hover {
+  border-color: var(--color-text-muted);
+}
+
+/* Active drag-over state: accent border + very subtle tint */
+.midi-dropzone.dragging {
+  border-color: var(--color-accent);
+  background-color: rgba(233, 69, 96, 0.05);
+}
+
+/* File loaded state: solid green border */
+.midi-dropzone.loaded {
+  border-style: solid;
+  border-color: #4caf50;
+}
+
+/* The hidden <input type="file"> — triggered programmatically on click */
+.midi-dropzone-input {
+  display: none;
+}
+
+/* Inner content wrapper (icon + text) */
+.midi-dropzone-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.midi-dropzone-icon {
+  font-size: 32px;
+  color: var(--color-text-muted);
+  line-height: 1;
+}
+
+.midi-dropzone.loaded .midi-dropzone-icon {
+  color: #4caf50;
+}
+
+.midi-dropzone-label {
+  font-size: var(--font-size-base);
+  font-weight: 500;
+  color: var(--color-text-primary);
+}
+
+/* Monospace so the filename reads clearly */
+.midi-dropzone-filename {
+  font-family: monospace;
+  font-size: var(--font-size-base);
+  font-weight: 500;
+  color: var(--color-text-primary);
+  word-break: break-all;
+}
+
+.midi-dropzone-hint {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.midi-dropzone-error {
+  margin-top: var(--space-sm);
+  font-size: var(--font-size-sm);
+  color: var(--color-accent);
+}
+
+/* ── Export Panel (bottom, full width) ────────────────────── */
+.panel-export {
+  flex-shrink: 0; /* don't let it grow or shrink — fixed height */
+}
+
+/* ── Export Button ────────────────────────────────────────── */
+.btn-export {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-lg);
+  background-color: var(--color-accent);
+  color: white;
+  font-size: var(--font-size-base);
+  font-weight: 600;
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  /* Buttons must NOT be draggable — override the header drag region */
+  -webkit-app-region: no-drag;
+}
+
+.btn-export:hover {
+  background-color: var(--color-accent-hover);
+}
+
+.btn-export:disabled {
+  background-color: var(--color-text-muted);
+  cursor: not-allowed;
+}
