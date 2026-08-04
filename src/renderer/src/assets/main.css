@@ -335,6 +335,17 @@
   flex-shrink: 0; /* don't let it grow or shrink — fixed height */
 }
 
+.export-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.export-error {
+  font-size: var(--font-size-sm);
+  color: var(--color-accent);
+}
+
 /* ── Export Button ────────────────────────────────────────── */
 .btn-export {
   display: inline-flex;
