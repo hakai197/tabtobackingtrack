@@ -176,7 +176,9 @@
   line-height: 1.6;
   resize: none;
   outline: none;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
 .tab-textarea::placeholder {
@@ -338,7 +340,9 @@
   -webkit-app-region: no-drag;
   -moz-appearance: textfield;
   appearance: textfield;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
 .bpm-input::-webkit-outer-spin-button,
@@ -370,7 +374,9 @@
   cursor: pointer;
   outline: none;
   -webkit-app-region: no-drag;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
 .timesig-select:focus {
@@ -826,7 +832,9 @@
   resize: none;
   outline: none;
   width: 100%;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
 .instrument-tab-textarea::placeholder {
@@ -1444,4 +1452,89 @@
   background: linear-gradient(90deg, #0066cc, #00d9ff);
   border-radius: 2px;
   transition: width 0.3s ease;
+}
+
+/* ── Instrument Preset Selectors ─────────────────────────── */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.2s ease forwards;
+}
+
+.preset-select-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  margin-top: var(--space-sm);
+}
+
+.preset-select-label {
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--color-text-muted);
+}
+
+.preset-select {
+  width: 100%;
+  background-color: var(--color-bg-input);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+  font-family: var(--font-family);
+  padding: var(--space-xs) var(--space-sm);
+  cursor: pointer;
+  transition:
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast);
+  -webkit-app-region: no-drag;
+}
+
+.preset-select:focus {
+  outline: none;
+  border-color: var(--color-border-focus);
+  box-shadow: var(--shadow-focus);
+}
+
+.preset-select:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.preset-select option {
+  background-color: var(--color-bg-panel);
+  color: var(--color-text-primary);
+}
+
+.fluidsynth-status {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  font-size: var(--font-size-xs);
+  margin-top: var(--space-sm);
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--radius-sm);
+  background-color: rgba(0, 0, 0, 0.2);
+  flex-wrap: wrap;
+}
+
+.fluidsynth-status.ready {
+  color: var(--color-success);
+  border: 1px solid rgba(76, 175, 80, 0.2);
+}
+
+.fluidsynth-status.not-ready {
+  color: var(--color-text-muted);
+  border: 1px solid var(--color-border);
 }

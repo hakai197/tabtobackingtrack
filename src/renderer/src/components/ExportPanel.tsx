@@ -2,7 +2,12 @@ import type { JSX } from 'react'
 import type { DrumStyle } from '../utils/drumDiGenerator'
 import type { BassStyle } from '../utils/bassDiGenerator'
 import type { InstrumentSlot, ExportMode } from '../types'
-import { AudioQualityPanel, type AudioQuality, type FluidSynthStatus } from './AudioQualityPanel'
+import {
+  AudioQualityPanel,
+  type AudioQuality,
+  type FluidSynthStatus,
+  type InstrumentPresets
+} from './AudioQualityPanel'
 
 const DRUM_STYLES: { value: DrumStyle; label: string }[] = [
   { value: 'rock', label: 'Rock' },
@@ -36,6 +41,8 @@ type Props = {
   audioQuality: AudioQuality
   onAudioQualityChange: (q: AudioQuality) => void
   onCheckFluidSynth: () => Promise<FluidSynthStatus>
+  instrumentPresets: InstrumentPresets
+  onInstrumentPresetsChange: (presets: InstrumentPresets) => void
   onExport: () => void
   isGenerating: boolean
   generateError: string | null
@@ -61,6 +68,8 @@ export function ExportPanel({
   audioQuality,
   onAudioQualityChange,
   onCheckFluidSynth,
+  instrumentPresets,
+  onInstrumentPresetsChange,
   onExport,
   isGenerating,
   generateError,
@@ -93,6 +102,8 @@ export function ExportPanel({
             audioQuality={audioQuality}
             onAudioQualityChange={onAudioQualityChange}
             onCheckFluidSynth={onCheckFluidSynth}
+            instrumentPresets={instrumentPresets}
+            onInstrumentPresetsChange={onInstrumentPresetsChange}
           />
 
           <div className="export-format-row">

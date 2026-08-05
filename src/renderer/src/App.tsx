@@ -22,7 +22,7 @@ import {
 } from './utils/instrumentDetector'
 import { drumPatternToNotes } from './utils/drumPatternToNotes'
 import { extractBassNotes } from './utils/bassNoteExtractor'
-import type { AudioQuality } from './components/AudioQualityPanel'
+import type { AudioQuality, InstrumentPresets } from './components/AudioQualityPanel'
 import type {
   AnalysisResult,
   Note,
@@ -92,6 +92,11 @@ function App(): JSX.Element {
   const [drumStyle, setDrumStyle] = useState<DrumStyle>('rock')
   const [bassStyle, setBassStyle] = useState<BassStyle>('root')
   const [audioQuality, setAudioQuality] = useState<AudioQuality>('standard')
+  const [instrumentPresets, setInstrumentPresets] = useState<InstrumentPresets>({
+    guitar: 27, // Electric Guitar (clean), 0-indexed
+    bass: 33, // Electric Bass (finger), 0-indexed
+    drumKit: 0 // Standard Kit
+  })
   const [isGenerating, setIsGenerating] = useState(false)
   const [generateError, setGenerateError] = useState<string | null>(null)
   const [exportFolder, setExportFolder] = useState<string | null>(null)
@@ -324,7 +329,8 @@ function App(): JSX.Element {
           bpm: userBPM,
           timeSignature: userTimeSig,
           folder,
-          filename: 'guitar_di.wav'
+          filename: 'guitar_di.wav',
+          gmProgram: instrumentPresets.guitar
         })
       )
     }
@@ -339,7 +345,8 @@ function App(): JSX.Element {
           bpm: userBPM,
           timeSignature: userTimeSig,
           folder,
-          filename: 'bass_di.wav'
+          filename: 'bass_di.wav',
+          gmProgram: instrumentPresets.bass
         })
       )
     }
@@ -358,7 +365,8 @@ function App(): JSX.Element {
           bpm: userBPM,
           timeSignature: userTimeSig,
           folder,
-          filename: 'drum_track.wav'
+          filename: 'drum_track.wav',
+          drumKitVariation: instrumentPresets.drumKit
         })
       )
     }
@@ -662,6 +670,8 @@ function App(): JSX.Element {
           audioQuality={audioQuality}
           onAudioQualityChange={setAudioQuality}
           onCheckFluidSynth={() => window.api.checkFluidSynth()}
+          instrumentPresets={instrumentPresets}
+          onInstrumentPresetsChange={setInstrumentPresets}
           onExport={handleGenerate}
           isGenerating={isGenerating}
           generateError={generateError}

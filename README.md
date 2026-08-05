@@ -161,6 +161,34 @@ In the Export panel, find the **Audio Quality** section and select **Enhanced (F
 
 > **Note:** Enhanced mode never silently falls back to Standard. If FluidSynth or the SoundFont file is missing, the export is blocked and an error is shown. Fix the setup and retry.
 
+### Instrument Presets
+
+When Enhanced Audio Mode is active, three preset selectors appear in the Export panel:
+
+**Guitar Preset**
+Choose from 8 guitar sounds including clean electric, jazz, overdriven, distortion, and acoustic variants.
+For NAM reamping, keep this set to "Electric Guitar (clean)" for the best input signal.
+
+**Bass Preset**
+Choose from 8 bass sounds including finger, pick, fretless, slap, and synth bass variants.
+"Electric Bass (finger)" works well for most styles.
+
+**Drum Kit**
+Choose from 8 GM drum kits:
+
+| Kit | Best For |
+|---|---|
+| Standard Kit | Rock, pop, general use |
+| Power Kit | Heavy rock, metal |
+| Room Kit | Smaller room ambience |
+| Jazz Kit | Jazz, swing |
+| Brush Kit | Soft jazz, acoustic |
+| Electronic Kit | Synth, electronic |
+| TR-808 Kit | Hip-hop, trap |
+| Orchestra Kit | Classical, cinematic |
+
+Preset selections are remembered for the session but reset to defaults on next launch.
+
 ---
 
 ## DAW Setup Guides

@@ -34,6 +34,8 @@ export type EnhancedRenderParams = {
   timeSignature: { numerator: number; denominator: number }
   folder: string
   filename: string
+  gmProgram?: number
+  drumKitVariation?: number
 }
 
 export type EnhancedRenderResult = {

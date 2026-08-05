@@ -19,7 +19,9 @@ export async function writeTempMidi(
   notes: MidiNote[],
   instrument: 'guitar' | 'bass' | 'drums',
   bpm: number,
-  timeSig: { numerator: number; denominator: number }
+  timeSig: { numerator: number; denominator: number },
+  gmProgram?: number,
+  drumKitVariation?: number
 ): Promise<string> {
   const midi = new Midi()
   midi.header.tempos = [{ ticks: 0, bpm }]
@@ -31,8 +33,14 @@ export async function writeTempMidi(
 
   if (instrument === 'drums') {
     track.channel = 9
+    if (drumKitVariation !== undefined && drumKitVariation !== 0) {
+      // GM2 bank select for drum kit variation: MSB=120 (0x78), LSB=0
+      track.addCC({ number: 0, value: 120, ticks: 0 })
+      track.addCC({ number: 32, value: 0, ticks: 0 })
+      track.instrument.number = drumKitVariation
+    }
   } else {
-    track.instrument.number = GM_PROGRAMS[instrument]
+    track.instrument.number = gmProgram ?? GM_PROGRAMS[instrument]
   }
 
   for (const note of notes) {

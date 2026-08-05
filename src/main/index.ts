@@ -163,7 +163,9 @@ app.whenReady().then(() => {
         params.notes,
         params.instrument,
         params.bpm,
-        params.timeSignature
+        params.timeSignature,
+        params.gmProgram,
+        params.drumKitVariation
       )
       const outputPath = join(params.folder, params.filename)
       await renderMidiToWav(midiPath, outputPath)
