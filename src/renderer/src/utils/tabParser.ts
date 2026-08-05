@@ -4,12 +4,12 @@ import type { AnalysisResult, Note } from '../types'
 // Matches a guitar tab string line in two common formats:
 //   Ultimate Guitar:  e|--0---3---5--|     (pipe separator)
 //   Dash format:      f-5\4-4-4-4-4---     (dash separator, no pipe)
-// The separator is either | or - (dash at start of character class = literal dash).
-// Note names cover all 7 letters a–g to support non-standard tunings.
 const TAB_LINE_RE = /^\s*([a-gA-G])\s*[-|](.+)$/
 
-// Seconds-per-beat constants for converting column positions to time.
-// We treat each unique beat position (column where any string has a note) as one quarter note.
+// Bracket format used by many bass/guitar tabs: [--0---3---5--]
+// No string label — string identity is inferred from line position within the block.
+const BRACKET_LINE_RE = /^\s*\[(.+)\]\s*$/
+
 const DEFAULT_BPM = 120
 
 function extractBpm(text: string): number {
@@ -21,13 +21,7 @@ function extractBpm(text: string): number {
   return DEFAULT_BPM
 }
 
-// Map the string label character to the open-string MIDI note.
-// Standard guitar strings (E A D G B e) use exact values.
-// Additional note names (C, F) are mapped to the nearest musically reasonable octave
-// so that key detection works correctly on alternate-tuned and non-standard instruments.
-// The `blockHasLowercaseE` flag disambiguates uppercase E:
-//   - If the block also has a lowercase 'e' (high e), then 'E' must be low E (40).
-//   - If there is no 'e' in the block, treat 'E' as high e (64) as a fallback.
+// Map string label to open-string MIDI note (pipe/dash format).
 function getMidiBase(label: string, blockHasLowercaseE: boolean): number {
   switch (label) {
     case 'e':
@@ -51,23 +45,25 @@ function getMidiBase(label: string, blockHasLowercaseE: boolean): number {
     case 'a':
       return 45 // A2
     case 'E':
-      return blockHasLowercaseE ? 40 : 64 // low E2, or high e if no other e present
+      return blockHasLowercaseE ? 40 : 64 // low E2 or high e if no other e
     default:
       return 40
   }
 }
 
-// Scans one string's tab content for fret numbers and their column positions.
-// Returns [columnPosition, fretNumber] pairs.
-// Strips trailing "| <annotation>" (e.g. "| x2") before scanning.
+// Default open-string MIDI notes for bracket format (index 0 = top string = highest pitch).
+const BRACKET_MIDI_BASES: Record<number, number[]> = {
+  4: [55, 50, 45, 40], // G D A E — standard 4-string bass
+  5: [55, 50, 45, 40, 35], // G D A E B — 5-string bass (low B)
+  6: [64, 59, 55, 50, 45, 40] // e B G D A E — standard guitar
+}
+
 function parseStringLine(content: string): Array<[number, number]> {
-  // Remove trailing | and anything after it (repeat markers, annotations).
   const stripped = content.replace(/\|[^|]*$/, '')
   const notes: Array<[number, number]> = []
   let i = 0
   while (i < stripped.length) {
     if (/\d/.test(stripped[i])) {
-      // Read the full number — frets can be two digits (e.g. 10, 12, 24).
       let numStr = ''
       const col = i
       while (i < stripped.length && /\d/.test(stripped[i])) {
@@ -81,9 +77,8 @@ function parseStringLine(content: string): Array<[number, number]> {
   return notes
 }
 
-// Collects groups of exactly 6 consecutive lines that all match TAB_LINE_RE.
-// When 12+ consecutive tab lines appear (two blocks with no blank line between),
-// they are split into 6-line chunks automatically.
+// Collect groups of 4–6 consecutive pipe/dash-format lines.
+// Accepts 4, 5, or 6 string blocks (previously required exactly 6).
 function findTabBlocks(lines: string[]): Array<string[]> {
   const blocks: Array<string[]> = []
   let run: string[] = []
@@ -96,8 +91,60 @@ function findTabBlocks(lines: string[]): Array<string[]> {
         run = []
       }
     } else {
-      // Non-tab line: discard any incomplete run.
+      if (run.length >= 4) blocks.push([...run])
       run = []
+    }
+  }
+  if (run.length >= 4) blocks.push([...run])
+
+  return blocks
+}
+
+// Collect groups of consecutive bracket-format lines.
+// Infers string count from the most common run length in the file.
+function findBracketBlocks(lines: string[]): Array<string[]> {
+  const runs: string[][] = []
+  let run: string[] = []
+
+  for (const line of lines) {
+    if (BRACKET_LINE_RE.test(line)) {
+      run.push(line)
+    } else {
+      if (run.length > 0) {
+        runs.push([...run])
+        run = []
+      }
+    }
+  }
+  if (run.length > 0) runs.push(run)
+  if (runs.length === 0) return []
+
+  // Find the most common run length in the valid 4–6 range.
+  const freq = new Map<number, number>()
+  for (const r of runs) {
+    if (r.length >= 4 && r.length <= 6) freq.set(r.length, (freq.get(r.length) ?? 0) + 1)
+  }
+  let stringCount = 4
+  let best = 0
+  for (const [len, count] of freq) {
+    if (count > best) {
+      stringCount = len
+      best = count
+    }
+  }
+
+  const blocks: string[][] = []
+  for (const r of runs) {
+    if (r.length === stringCount) {
+      blocks.push(r)
+    } else if (r.length > stringCount && r.length % stringCount === 0) {
+      // Multiple same-size blocks concatenated without a separator line.
+      for (let i = 0; i < r.length; i += stringCount) {
+        blocks.push(r.slice(i, i + stringCount))
+      }
+    } else if (r.length >= 4) {
+      // Different string count (e.g. 5-string bridge in a 4-string tab) — accept as-is.
+      blocks.push(r)
     }
   }
 
@@ -106,14 +153,18 @@ function findTabBlocks(lines: string[]): Array<string[]> {
 
 export function parseTab(text: string): AnalysisResult {
   const bpm = extractBpm(text)
-  const beatDuration = 60 / bpm // seconds per quarter note
+  const beatDuration = 60 / bpm
 
   const lines = text.split('\n')
-  const blocks = findTabBlocks(lines)
+
+  // Try pipe/dash format first, then bracket format.
+  const stdBlocks = findTabBlocks(lines)
+  const isBracket = stdBlocks.length === 0
+  const blocks = isBracket ? findBracketBlocks(lines) : stdBlocks
 
   if (blocks.length === 0) {
     throw new Error(
-      'No tab found. Paste a 6-string tab using either pipe format (e|--0--|) or dash format (e-0--).'
+      'No tab found. Paste a standard tab (e|--0--|), dash tab (e-0--), or bracket tab ([--0--]).'
     )
   }
 
@@ -121,23 +172,32 @@ export function parseTab(text: string): AnalysisResult {
   let blockStartTime = 0
 
   for (const block of blocks) {
-    // Detect whether any line uses lowercase 'e' to disambiguate high vs low E.
-    // Handles both pipe format (e|) and dash format (e-).
-    const blockHasLowercaseE = block.some((line) => /^\s*e\s*[-|]/.test(line))
-
-    // Parse each string's notes.
     const stringData: Array<{ midiBase: number; entries: Array<[number, number]> }> = []
-    for (const line of block) {
-      const match = line.match(TAB_LINE_RE)
-      if (!match) continue
-      const midiBase = getMidiBase(match[1], blockHasLowercaseE)
-      const entries = parseStringLine(match[2])
-      if (entries.length > 0) {
-        stringData.push({ midiBase, entries })
+
+    if (isBracket) {
+      const basesForCount = BRACKET_MIDI_BASES[block.length] ?? BRACKET_MIDI_BASES[4]
+      for (let i = 0; i < block.length; i++) {
+        const match = block[i].match(BRACKET_LINE_RE)
+        if (!match) continue
+        const entries = parseStringLine(match[1])
+        if (entries.length > 0) {
+          stringData.push({ midiBase: basesForCount[i] ?? 40, entries })
+        }
+      }
+    } else {
+      const blockHasLowercaseE = block.some((line) => /^\s*e\s*[-|]/.test(line))
+      for (const line of block) {
+        const match = line.match(TAB_LINE_RE)
+        if (!match) continue
+        const midiBase = getMidiBase(match[1], blockHasLowercaseE)
+        const entries = parseStringLine(match[2])
+        if (entries.length > 0) {
+          stringData.push({ midiBase, entries })
+        }
       }
     }
 
-    // Gather all unique column positions across all 6 strings and sort them.
+    // Gather all unique column positions and sort them.
     const allColumns = new Set<number>()
     for (const { entries } of stringData) {
       for (const [col] of entries) allColumns.add(col)
@@ -146,28 +206,21 @@ export function parseTab(text: string): AnalysisResult {
 
     if (sortedColumns.length === 0) continue
 
-    // Map each column position to an absolute timestamp.
-    // We treat each column as one quarter note — consistent, BPM-aware spacing.
     const columnToTime = new Map<number, number>()
     sortedColumns.forEach((col, beatIndex) => {
       columnToTime.set(col, blockStartTime + beatIndex * beatDuration)
     })
 
-    // Convert string entries into Note objects.
     for (const { midiBase, entries } of stringData) {
       for (let i = 0; i < entries.length; i++) {
         const [col, fret] = entries[i]
         const startTime = columnToTime.get(col)!
-
-        // Duration lasts until the next note on this string, or one beat if it's the last.
         const duration =
           i + 1 < entries.length ? columnToTime.get(entries[i + 1][0])! - startTime : beatDuration
-
         allNotes.push({ pitch: midiBase + fret, duration, startTime, velocity: 100 })
       }
     }
 
-    // Add one beat of silence between blocks so they don't run together.
     blockStartTime += (sortedColumns.length + 1) * beatDuration
   }
 
@@ -175,7 +228,7 @@ export function parseTab(text: string): AnalysisResult {
 
   return {
     bpm,
-    timeSig: '4/4', // tabs don't encode time signature; 4/4 is the correct default
+    timeSig: '4/4',
     key,
     notes: allNotes
   }
