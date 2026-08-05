@@ -20,6 +20,35 @@
     "build:mac": "electron-vite build && electron-builder --mac",
     "build:linux": "electron-vite build && electron-builder --linux"
   },
+  "build": {
+    "appId": "com.tabtobackingtrack.app",
+    "productName": "Tab to Backing Track",
+    "copyright": "Copyright © 2026",
+    "directories": {
+      "buildResources": "build",
+      "output": "dist"
+    },
+    "files": [
+      "out/**/*",
+      "!out/**/*.map"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        }
+      ],
+      "icon": "build/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Tab to Backing Track"
+    }
+  },
   "dependencies": {
     "@coderline/alphatab": "^1.8.4",
     "@electron-toolkit/preload": "^3.0.2",

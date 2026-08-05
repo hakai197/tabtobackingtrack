@@ -66,8 +66,8 @@ app.whenReady().then(() => {
     try {
       await Promise.all([
         writeFile(join(folder, 'guitar_di.wav'), Buffer.from(payload.guitarDiWav)),
-        writeFile(join(folder, 'drum_track.mid'), Buffer.from(payload.drumMidi)),
-        writeFile(join(folder, 'bass_track.mid'), Buffer.from(payload.bassMidi)),
+        writeFile(join(folder, 'drum_track.wav'), Buffer.from(payload.drumDiWav)),
+        writeFile(join(folder, 'bass_di.wav'), Buffer.from(payload.bassDiWav)),
         writeFile(join(folder, 'session.txt'), payload.sessionTxt, 'utf-8')
       ])
       return { canceled: false, folder }

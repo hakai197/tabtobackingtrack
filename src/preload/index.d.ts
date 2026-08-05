@@ -2,8 +2,8 @@ import { ElectronAPI } from '@electron-toolkit/preload'
 
 export type ExportSessionPayload = {
   guitarDiWav: ArrayBuffer
-  drumMidi: ArrayBuffer
-  bassMidi: ArrayBuffer
+  drumDiWav: ArrayBuffer
+  bassDiWav: ArrayBuffer
   sessionTxt: string
 }
 

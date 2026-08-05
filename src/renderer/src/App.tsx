@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, type JSX } from 'react'
+import { useState, useRef, type JSX } from 'react'
 import { Midi } from '@tonejs/midi'
 import './assets/base.css'
 import './assets/main.css'
@@ -10,8 +10,8 @@ import { parseGuitarPro } from './utils/guitarProParser'
 import { parseMidi } from './utils/midiParser'
 import { parseMusicXml } from './utils/musicXmlParser'
 import { generateDiWav } from './utils/diWavGenerator'
-import { generateDrumMidi, type DrumStyle } from './utils/drumMidiGenerator'
-import { generateBassMidi, type BassStyle } from './utils/bassMidiGenerator'
+import { generateDrumDiWav, type DrumStyle } from './utils/drumDiGenerator'
+import { generateBassDiWav, type BassStyle } from './utils/bassDiGenerator'
 import type { AnalysisResult, Note, TimeSig } from './types'
 
 type InputMode = 'guitarpro' | 'midi' | 'tab' | 'musicxml'
@@ -106,20 +106,19 @@ function App(): JSX.Element {
   const bpmPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const bpmPressInterval = useRef<ReturnType<typeof setInterval> | null>(null)
 
-  // Sync transport values whenever analysis changes (new file or clear).
-  useEffect(() => {
-    if (analysis) {
-      setUserBPM(analysis.bpm)
-      setUserTimeSig(parseTimeSig(analysis.timeSig))
-    } else {
-      setUserBPM(120)
-      setUserTimeSig({ numerator: 4, denominator: 4 })
-    }
-  }, [analysis])
+  // Set analysis and immediately synchronise the transport controls.
+  // Using an explicit handler avoids calling setState inside a useEffect.
+  function handleAnalysis(result: AnalysisResult): void {
+    setAnalysis(result)
+    setUserBPM(result.bpm)
+    setUserTimeSig(parseTimeSig(result.timeSig))
+  }
 
   function switchMode(mode: InputMode): void {
     setInputMode(mode)
     setAnalysis(null)
+    setUserBPM(120)
+    setUserTimeSig({ numerator: 4, denominator: 4 })
     setGlobalFilename(null)
     setParseError(null)
     setExportFolder(null)
@@ -128,6 +127,8 @@ function App(): JSX.Element {
 
   function handleClear(): void {
     setAnalysis(null)
+    setUserBPM(120)
+    setUserTimeSig({ numerator: 4, denominator: 4 })
     setGlobalFilename(null)
     setParseError(null)
     setExportFolder(null)
@@ -207,7 +208,7 @@ function App(): JSX.Element {
       setGlobalFilename(file.name)
       setInputMode(mode)
       setClearKey((k) => k + 1)
-      setAnalysis(result)
+      handleAnalysis(result)
     } catch (err) {
       setParseError(err instanceof Error ? err.message : 'Could not parse file.')
       setGlobalFilename(null)
@@ -226,9 +227,11 @@ function App(): JSX.Element {
       // Pitches and velocities are left untouched.
       const scaledNotes = scaleNotes(analysis.notes, analysis.bpm, userBPM)
 
-      const guitarDiWav = await generateDiWav(scaledNotes)
-      const drumMidi = generateDrumMidi(userBPM, drumStyle, scaledNotes, userTimeSig)
-      const bassMidi = generateBassMidi(userBPM, bassStyle, scaledNotes, userTimeSig)
+      const [guitarDiWav, drumDiWav, bassDiWav] = await Promise.all([
+        generateDiWav(scaledNotes),
+        generateDrumDiWav(userBPM, drumStyle, scaledNotes),
+        generateBassDiWav(userBPM, bassStyle, scaledNotes)
+      ])
 
       const grooveLabel = DRUM_STYLES.find((s) => s.value === drumStyle)?.label ?? drumStyle
       const bassLabel = BASS_STYLES.find((s) => s.value === bassStyle)?.label ?? bassStyle
@@ -243,14 +246,19 @@ function App(): JSX.Element {
         '',
         'OUTPUT FILES',
         '=====================================',
-        'guitar_di.wav    — Dry instrument signal (DI)',
-        `drum_track.mid   — Drum groove: ${grooveLabel}`,
-        `bass_track.mid   — Bass line: ${bassLabel}`,
+        'guitar_di.wav    — Guitar dry DI signal',
+        `drum_track.wav   — Drum synthesis: ${grooveLabel}`,
+        `bass_di.wav      — Bass dry DI signal: ${bassLabel}`,
         '',
         `Import all three files into your DAW and set the project tempo to ${userBPM} BPM.`
       ].join('\n')
 
-      const result = await window.api.exportSession({ guitarDiWav, drumMidi, bassMidi, sessionTxt })
+      const result = await window.api.exportSession({
+        guitarDiWav,
+        drumDiWav,
+        bassDiWav,
+        sessionTxt
+      })
 
       if (result.canceled) return
       if (result.error) {
@@ -278,10 +286,11 @@ function App(): JSX.Element {
 
   const activeDropzone = (() => {
     const props = { key: clearKey, defaultFilename: globalFilename ?? undefined }
-    if (inputMode === 'guitarpro') return <GuitarProDropzone {...props} onAnalysis={setAnalysis} />
-    if (inputMode === 'midi') return <MidiDropzone {...props} onAnalysis={setAnalysis} />
-    if (inputMode === 'tab') return <TabInput key={clearKey} onAnalysis={setAnalysis} />
-    return <MusicXmlDropzone {...props} onAnalysis={setAnalysis} />
+    if (inputMode === 'guitarpro')
+      return <GuitarProDropzone {...props} onAnalysis={handleAnalysis} />
+    if (inputMode === 'midi') return <MidiDropzone {...props} onAnalysis={handleAnalysis} />
+    if (inputMode === 'tab') return <TabInput key={clearKey} onAnalysis={handleAnalysis} />
+    return <MusicXmlDropzone {...props} onAnalysis={handleAnalysis} />
   })()
 
   return (
