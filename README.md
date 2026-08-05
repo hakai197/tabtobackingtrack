@@ -71,6 +71,8 @@ It was built specifically for the NAM + SSD reamping workflow: record or notate 
 
 Everything is bundled. No Node.js, no Python, no extra installs needed. The app will notify you automatically when a new version is available.
 
+> For a detailed first-use walkthrough, DAW integration steps, and Enhanced Audio mode setup, see **[SETUP.md](SETUP.md)**.
+
 ---
 
 ## How To Use It
