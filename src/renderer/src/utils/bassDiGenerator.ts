@@ -200,5 +200,4 @@ export async function generateBassDiWav(
   }
 
   return encodeWav(await ctx.startRendering())
-
 }

@@ -17,12 +17,12 @@ Tab to Backing Track is a free, standalone desktop app for bedroom musicians. Lo
 
 **Get back:**
 
-| File | What it is |
-|---|---|
-| `guitar_di.wav` | Raw DI audio — drop it on a track and hit it with NAM |
-| `bass_di.wav` | Bass DI audio or bass MIDI groove, depending on format selection |
+| File             | What it is                                                       |
+| ---------------- | ---------------------------------------------------------------- |
+| `guitar_di.wav`  | Raw DI audio — drop it on a track and hit it with NAM            |
+| `bass_di.wav`    | Bass DI audio or bass MIDI groove, depending on format selection |
 | `drum_track.wav` | Drum synthesis WAV or MIDI groove, depending on format selection |
-| `session.txt` | BPM, key, time signature reference |
+| `session.txt`    | BPM, key, time signature reference                               |
 
 From there the workflow is yours. Drag the files into any DAW, pick your NAM captures and drum kit, and hit play. No proprietary project format, no lock-in — just standard files that work everywhere.
 
@@ -30,7 +30,7 @@ From there the workflow is yours. Drag the files into any DAW, pick your NAM cap
 
 ## Why This Exists
 
-Most tools go in the wrong direction — they transcribe audio *into* tab. Tab to Backing Track goes the other way. It takes notation you already have and turns it into something you can actually play through an amp sim.
+Most tools go in the wrong direction — they transcribe audio _into_ tab. Tab to Backing Track goes the other way. It takes notation you already have and turns it into something you can actually play through an amp sim.
 
 - **Guitar Pro** can export audio, but it's synthetic-sounding and isn't formatted for reamping.
 - **Generic backing track generators** don't know your tab — they just invent something.
@@ -42,13 +42,13 @@ It was built specifically for the NAM + SSD reamping workflow: record or notate 
 
 ## Supported Input Formats
 
-| Format | Extensions | Notes |
-|---|---|---|
+| Format     | Extensions                                    | Notes                                             |
+| ---------- | --------------------------------------------- | ------------------------------------------------- |
 | Guitar Pro | `.gp`, `.gp3`, `.gp4`, `.gp5`, `.gpx`, `.ptb` | Full track with tempo, time signature, and tuning |
-| MIDI | `.mid`, `.midi` | Standard MIDI files (Type 0 and 1) |
-| MusicXML | `.xml`, `.musicxml` | Exported from Sibelius, Finale, MuseScore, etc. |
-| ASCII Tab | `.txt` | Ultimate Guitar style plain text |
-| ChordPro | `.cho`, `.chordpro` | Chord/lyric chart format |
+| MIDI       | `.mid`, `.midi`                               | Standard MIDI files (Type 0 and 1)                |
+| MusicXML   | `.xml`, `.musicxml`                           | Exported from Sibelius, Finale, MuseScore, etc.   |
+| ASCII Tab  | `.txt`                                        | Ultimate Guitar style plain text                  |
+| ChordPro   | `.cho`, `.chordpro`                           | Chord/lyric chart format                          |
 
 ---
 
@@ -153,11 +153,11 @@ In the Export panel, find the **Audio Quality** section and select **Enhanced (F
 
 ### GM instrument mapping
 
-| Track | GM Program | Sound |
-|---|---|---|
-| Guitar | 27 | Electric Guitar (Clean) |
-| Bass | 33 | Electric Bass (Finger) |
-| Drums | Channel 10 | GM percussion |
+| Track  | GM Program | Sound                   |
+| ------ | ---------- | ----------------------- |
+| Guitar | 27         | Electric Guitar (Clean) |
+| Bass   | 33         | Electric Bass (Finger)  |
+| Drums  | Channel 10 | GM percussion           |
 
 > **Note:** Enhanced mode never silently falls back to Standard. If FluidSynth or the SoundFont file is missing, the export is blocked and an error is shown. Fix the setup and retry.
 
@@ -272,7 +272,7 @@ tab-to-backing-track/
 - **Parsing runs in the renderer process.** The main process only handles dialogs, file writes, and FluidSynth execution. This keeps the IPC surface minimal.
 - **Notes are stored in seconds** (not ticks or beats). When the user changes BPM, note times are scaled by `detectedBPM / userBPM` before export — pitches and velocities are never touched.
 - **Standard mode needs no external dependencies.** WAV output is synthesised directly from note data using `OfflineAudioContext`. MIDI output uses `@tonejs/midi`. Nothing to install or download separately.
-- **Enhanced mode is strictly opt-in.** FluidSynth rendering only runs when explicitly selected *and* FluidSynth is verified present. The app never silently falls back between modes.
+- **Enhanced mode is strictly opt-in.** FluidSynth rendering only runs when explicitly selected _and_ FluidSynth is verified present. The app never silently falls back between modes.
 - **Auto-update is passive.** On launch the app checks GitHub Releases for a newer version. If one is available, a banner appears — the user chooses when to download and install.
 
 ---

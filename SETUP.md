@@ -22,31 +22,31 @@ This guide takes you from a fresh install to your first completed backing track 
 
 ### Required
 
-| What | Where to get it |
-|---|---|
-| **Tab to Backing Track** | [Releases page](https://github.com/hakai197/tabtobackingtrack/releases) |
-| **A DAW** | Reaper, FL Studio, Ableton, or any other |
-| **NAM plugin** (for reamping guitar and bass) | [neuralampmodeler.com](https://www.neuralampmodeler.com) |
-| **NAM captures** (amp profiles) | [tone3000.com](https://tone3000.com) |
+| What                                          | Where to get it                                                         |
+| --------------------------------------------- | ----------------------------------------------------------------------- |
+| **Tab to Backing Track**                      | [Releases page](https://github.com/hakai197/tabtobackingtrack/releases) |
+| **A DAW**                                     | Reaper, FL Studio, Ableton, or any other                                |
+| **NAM plugin** (for reamping guitar and bass) | [neuralampmodeler.com](https://www.neuralampmodeler.com)                |
+| **NAM captures** (amp profiles)               | [tone3000.com](https://tone3000.com)                                    |
 
 ### Optional
 
-| What | Why you'd need it |
-|---|---|
-| **A drum VST** (e.g. SSD5 Free) | Only needed if exporting drums as MIDI rather than WAV |
-| **FluidSynth + a SoundFont** | Only needed for Enhanced Audio mode — see [Section 5](#5-enhanced-audio-mode-setup) |
+| What                            | Why you'd need it                                                                   |
+| ------------------------------- | ----------------------------------------------------------------------------------- |
+| **A drum VST** (e.g. SSD5 Free) | Only needed if exporting drums as MIDI rather than WAV                              |
+| **FluidSynth + a SoundFont**    | Only needed for Enhanced Audio mode — see [Section 5](#5-enhanced-audio-mode-setup) |
 
 ### Your tab files
 
 The app accepts these formats for each instrument slot:
 
-| Format | File extensions |
-|---|---|
+| Format     | File extensions                               |
+| ---------- | --------------------------------------------- |
 | Guitar Pro | `.gp`, `.gp3`, `.gp4`, `.gp5`, `.gpx`, `.ptb` |
-| MIDI | `.mid`, `.midi` |
-| MusicXML | `.xml`, `.musicxml` |
-| ASCII tab | `.txt` |
-| ChordPro | `.cho`, `.chordpro` |
+| MIDI       | `.mid`, `.midi`                               |
+| MusicXML   | `.xml`, `.musicxml`                           |
+| ASCII tab  | `.txt`                                        |
+| ChordPro   | `.cho`, `.chordpro`                           |
 
 You don't need all three instruments. Load just the ones you have — the rest stay empty and are skipped on export.
 
@@ -91,6 +91,7 @@ If you skip a slot, that instrument is simply not exported.
 ### Step 3 — Check the Analysis panel
 
 The **Analysis** panel on the right shows:
+
 - **Key** — detected from the notes (e.g. "A minor")
 - **BPM** — tempo from the file
 - **Time Signature** — e.g. 4/4
@@ -101,6 +102,7 @@ If multiple slots are loaded, a tab strip appears above the analysis data — cl
 ### Step 4 — Adjust BPM if needed
 
 If the detected BPM is wrong (common with ASCII tab files which have no tempo), adjust it:
+
 - Click **−** or **+** to step by 1 BPM. Hold the button to scroll quickly.
 - Or type a number directly in the BPM field.
 
@@ -111,15 +113,18 @@ The **edited** badge appears when you've changed the value from what was detecte
 In the **Export** panel:
 
 **Format (bass and drums only):**
+
 - **WAV (DI)** — generates synthesized audio files. Use this if you plan to reamp bass through NAM, or want a drum WAV to place directly in your DAW without a drum plugin.
 - **MIDI** — generates MIDI files. Use this to drive a drum VST (like SSD) or a bass plugin.
 
 Guitar is always exported as WAV — it's a raw DI signal by definition.
 
 **Groove** (affects drum output):
+
 - Rock, Shuffle, Ballad, Pop — choose the pattern that fits the song.
 
 **Bass style** (affects bass output):
+
 - **Root** — plays the root note of each chord, sustained. Clean and simple.
 - **Root-Fifth** — alternates root and fifth. More movement.
 - **Walking** — chromatic approach lines between chords. Jazz or more complex feel.
@@ -130,12 +135,12 @@ Click the **Export** button (it shows the instrument names you've checked, e.g. 
 
 The app writes:
 
-| File | What it is |
-|---|---|
-| `guitar_di.wav` | Guitar DI — ready for NAM reamping |
-| `bass_di.wav` | Bass DI or `bass_track.mid` depending on format |
+| File             | What it is                                             |
+| ---------------- | ------------------------------------------------------ |
+| `guitar_di.wav`  | Guitar DI — ready for NAM reamping                     |
+| `bass_di.wav`    | Bass DI or `bass_track.mid` depending on format        |
 | `drum_track.wav` | Drum synthesis or `drum_track.mid` depending on format |
-| `session.txt` | BPM, key, time signature, and file list reference |
+| `session.txt`    | BPM, key, time signature, and file list reference      |
 
 That's the export done. Now take those files into your DAW — see [Section 4](#4-daw-integration).
 
@@ -248,6 +253,7 @@ To find the installation folder: right-click the desktop shortcut → **Open fil
 **If running from source:**
 
 Place the file at:
+
 ```
 <project-root>\resources\fluidsynth\win\fluidsynth.exe
 ```
@@ -283,12 +289,12 @@ To open `%APPDATA%`: press **Win + R**, type `%APPDATA%`, and press Enter. Then 
 
 The status display will show one of two outcomes:
 
-| Result | Meaning |
-|---|---|
-| ✓ FluidSynth binary | `fluidsynth.exe` was found at the expected path |
-| ✓ SoundFont file | `GeneralUser-GS.sf2` was found in `%APPDATA%` |
-| ✗ FluidSynth binary | File not found — recheck the path in Step 1 |
-| ✗ SoundFont file | File not found — recheck the filename and folder in Step 2 |
+| Result              | Meaning                                                    |
+| ------------------- | ---------------------------------------------------------- |
+| ✓ FluidSynth binary | `fluidsynth.exe` was found at the expected path            |
+| ✓ SoundFont file    | `GeneralUser-GS.sf2` was found in `%APPDATA%`              |
+| ✗ FluidSynth binary | File not found — recheck the path in Step 1                |
+| ✗ SoundFont file    | File not found — recheck the filename and folder in Step 2 |
 
 When both show a checkmark, Enhanced mode is ready. Your next export will use FluidSynth.
 
@@ -296,11 +302,11 @@ When both show a checkmark, Enhanced mode is ready. Your next export will use Fl
 
 ### What Enhanced mode does differently
 
-| Instrument | Standard mode | Enhanced mode |
-|---|---|---|
-| Guitar | Sawtooth DI synthesis (OfflineAudioContext) | GM program 27 — Electric Guitar (Clean) |
-| Bass | Simulated bass waveform | GM program 33 — Electric Bass (Finger) |
-| Drums | Synthesized kick/snare/hi-hat waveforms | GM channel 10 — real drum samples from SoundFont |
+| Instrument | Standard mode                               | Enhanced mode                                    |
+| ---------- | ------------------------------------------- | ------------------------------------------------ |
+| Guitar     | Sawtooth DI synthesis (OfflineAudioContext) | GM program 27 — Electric Guitar (Clean)          |
+| Bass       | Simulated bass waveform                     | GM program 33 — Electric Bass (Finger)           |
+| Drums      | Synthesized kick/snare/hi-hat waveforms     | GM channel 10 — real drum samples from SoundFont |
 
 Enhanced mode still outputs WAV files with the same filenames — you use them in your DAW exactly the same way.
 
@@ -339,6 +345,7 @@ Make sure at least one instrument checkbox is checked in the Export panel. The E
 The path check failed. Go back to [Section 5](#5-enhanced-audio-mode-setup) and use **Check FluidSynth Status** in the app to see exactly which file is missing and where it's expected.
 
 Common mistakes:
+
 - The SoundFont filename is wrong — it must be exactly `GeneralUser-GS.sf2`
 - `fluidsynth.exe` was placed in the wrong folder — check that it's under `resources\fluidsynth\win\`
 - The `%APPDATA%` path contains a space or non-ASCII character — try creating the folder manually via File Explorer rather than the command line
