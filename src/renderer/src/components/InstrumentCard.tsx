@@ -34,7 +34,6 @@ export function InstrumentCard({
   const [isDragging, setIsDragging] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [warnings, setWarnings] = useState<string[]>([])
-  const [showText, setShowText] = useState(false)
   const [tabText, setTabText] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
   const meta = CARD_META[instrument]
@@ -62,7 +61,6 @@ export function InstrumentCard({
         }
       }
       onLoad(result, file.name)
-      setShowText(false)
       setTabText('')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to parse file')
@@ -110,7 +108,6 @@ export function InstrumentCard({
       notes: parsed.notes
     }
     onLoad(result, 'pasted tab')
-    setShowText(false)
     setTabText('')
   }
 
@@ -166,30 +163,25 @@ export function InstrumentCard({
             >
               Browse
             </button>
-            <button type="button" className="btn-link" onClick={() => setShowText((v) => !v)}>
-              {showText ? 'Hide tab' : 'Paste tab'}
-            </button>
           </div>
 
-          {showText && (
-            <div className="instrument-tab-input">
-              <textarea
-                className="instrument-tab-textarea"
-                value={tabText}
-                onChange={(e) => setTabText(e.target.value)}
-                placeholder="Paste ASCII tab here…"
-                rows={3}
-              />
-              <button
-                type="button"
-                className="btn-parse"
-                disabled={!tabText.trim()}
-                onClick={onParseTab}
-              >
-                Parse
-              </button>
-            </div>
-          )}
+          <div className="instrument-tab-input">
+            <textarea
+              className="instrument-tab-textarea"
+              value={tabText}
+              onChange={(e) => setTabText(e.target.value)}
+              placeholder="Paste ASCII tab here…"
+              rows={3}
+            />
+            <button
+              type="button"
+              className="btn-parse"
+              disabled={!tabText.trim()}
+              onClick={onParseTab}
+            >
+              Parse Tab
+            </button>
+          </div>
 
           {error && <p className="instrument-card-error">{error}</p>}
           {warnings.length > 0 && <p className="instrument-card-warning">{warnings[0]}</p>}
