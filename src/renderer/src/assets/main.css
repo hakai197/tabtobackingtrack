@@ -2,9 +2,24 @@
 .app {
   display: flex;
   flex-direction: column;
+  min-height: 100vh;
   height: 100vh;
-  background-color: var(--color-bg-primary);
+  background: linear-gradient(135deg, #000000 0%, #0a1a2e 50%, #16213e 100%);
+  position: relative;
   overflow: hidden;
+}
+
+/* Cyan accent line across the top */
+.app::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #0066cc 0%, #00d9ff 50%, #0066cc 100%);
+  z-index: 10;
+  flex-shrink: 0;
 }
 
 /* ── Header ───────────────────────────────────────────────── */
@@ -13,17 +28,23 @@
   align-items: center;
   gap: var(--space-sm);
   padding: var(--space-md) var(--space-lg);
-  background-color: var(--color-bg-secondary);
-  border-bottom: 1px solid var(--color-border);
+  padding-top: calc(var(--space-md) + 3px); /* clear the ::before bar */
+  background: linear-gradient(135deg, #000000 0%, #001a33 50%, #003366 100%);
+  border-bottom: 2px solid var(--color-border);
+  box-shadow: 0 2px 20px rgba(0, 217, 255, 0.15);
   /* Allows the user to drag the window by the header */
   -webkit-app-region: drag;
+  flex-shrink: 0;
 }
 
 .app-header h1 {
   font-size: var(--font-size-lg);
-  font-weight: 600;
-  color: var(--color-text-primary);
-  letter-spacing: 0.5px;
+  font-weight: 700;
+  background: linear-gradient(to right, #00d9ff, #0099ff);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  letter-spacing: 1px;
 }
 
 .app-header .accent {
@@ -37,7 +58,8 @@
   flex: 1;
   gap: var(--space-md);
   padding: var(--space-md);
-  overflow: hidden;
+  overflow-y: auto;
+  min-height: 0;
 }
 
 /* ── Top Row (Input + Analysis side by side) ──────────────── */
@@ -45,18 +67,21 @@
   display: flex;
   flex: 1;
   gap: var(--space-md);
-  min-height: 0; /* important: prevents flex children from overflowing */
+  min-height: 0;
 }
 
 /* ── Panels (shared styles for Input and Analysis) ────────── */
 .panel {
   display: flex;
   flex-direction: column;
-  background-color: var(--color-bg-secondary);
+  background: rgba(0, 0, 0, 0.7);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   padding: var(--space-md);
   overflow: hidden;
+  box-shadow:
+    0 0 20px rgba(0, 217, 255, 0.1),
+    0 4px 16px rgba(0, 0, 0, 0.6);
 }
 
 .panel-title {
@@ -64,19 +89,19 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 1.5px;
-  color: var(--color-text-muted);
+  color: var(--color-accent);
   margin-bottom: var(--space-md);
   padding-bottom: var(--space-sm);
   border-bottom: 1px solid var(--color-border);
+  text-shadow: 0 0 10px rgba(0, 217, 255, 0.4);
 }
 
 /* ── Input Panel (left, wider) ────────────────────────────── */
 .panel-input {
-  flex: 2; /* takes up 2/3 of the top row */
+  flex: 2;
 }
 
 /* ── Panel Header (title + mode toggle row) ───────────────── */
-/* Replaces the plain .panel-title when a toggle is present.   */
 .panel-header {
   display: flex;
   align-items: center;
@@ -86,7 +111,6 @@
   border-bottom: 1px solid var(--color-border);
 }
 
-/* When inside .panel-header, the title has no own bottom border/margin. */
 .panel-header .panel-title {
   margin-bottom: 0;
   padding-bottom: 0;
@@ -113,19 +137,21 @@
   transition:
     border-color 0.15s ease,
     color 0.15s ease,
-    background-color 0.15s ease;
+    background-color 0.15s ease,
+    box-shadow 0.15s ease;
   -webkit-app-region: no-drag;
 }
 
 .input-mode-tab:hover {
-  border-color: var(--color-text-muted);
+  border-color: var(--color-accent);
   color: var(--color-text-primary);
 }
 
 .input-mode-tab.active {
   border-color: var(--color-accent);
   color: var(--color-accent);
-  background-color: rgba(233, 69, 96, 0.08);
+  background-color: rgba(0, 217, 255, 0.08);
+  box-shadow: 0 0 8px rgba(0, 217, 255, 0.2);
 }
 
 /* ── Tab Text Input ───────────────────────────────────────── */
@@ -150,7 +176,7 @@
   line-height: 1.6;
   resize: none;
   outline: none;
-  transition: border-color 0.15s ease;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .tab-textarea::placeholder {
@@ -159,7 +185,8 @@
 }
 
 .tab-textarea:focus {
-  border-color: var(--color-text-muted);
+  border-color: var(--color-accent);
+  box-shadow: 0 0 10px rgba(0, 217, 255, 0.2);
 }
 
 .tab-input-footer {
@@ -173,46 +200,50 @@
 .tab-input-error {
   flex: 1;
   font-size: var(--font-size-sm);
-  color: var(--color-accent);
+  color: #ff6b6b;
 }
 
-/* Secondary action button — smaller than the main export button */
+/* Secondary action button */
 .btn-parse {
   padding: var(--space-xs) var(--space-md);
-  background-color: transparent;
-  color: var(--color-accent);
+  background: linear-gradient(135deg, #0066cc, #0099ff);
+  color: white;
   font-size: var(--font-size-sm);
   font-weight: 700;
   letter-spacing: 0.5px;
-  border: 1px solid var(--color-accent);
+  border: 1px solid rgba(0, 217, 255, 0.6);
   border-radius: var(--radius-md);
   cursor: pointer;
   transition:
-    background-color 0.15s ease,
-    color 0.15s ease;
+    background 0.15s ease,
+    box-shadow 0.15s ease;
   -webkit-app-region: no-drag;
   white-space: nowrap;
+  box-shadow: 0 0 10px rgba(0, 217, 255, 0.25);
 }
 
 .btn-parse:hover {
-  background-color: var(--color-accent);
-  color: white;
+  background: linear-gradient(135deg, #0099ff, #00d9ff);
+  box-shadow: 0 0 18px rgba(0, 217, 255, 0.5);
 }
 
 .btn-parse:disabled {
-  border-color: var(--color-text-muted);
+  background: none;
+  border-color: var(--color-border);
   color: var(--color-text-muted);
   cursor: not-allowed;
+  box-shadow: none;
 }
 
 .btn-parse:disabled:hover {
-  background-color: transparent;
+  background: none;
+  box-shadow: none;
   color: var(--color-text-muted);
 }
 
 /* ── Analysis Panel (right, narrower) ────────────────────── */
 .panel-analysis {
-  flex: 1; /* takes up 1/3 of the top row */
+  flex: 1;
 }
 
 /* ── Analysis Stats Grid ──────────────────────────────────── */
@@ -244,7 +275,6 @@
   color: var(--color-text-primary);
 }
 
-/* "edited" badge next to label when user has changed a detected value */
 .badge-edited {
   display: inline-block;
   padding: 1px 5px;
@@ -282,7 +312,8 @@
   user-select: none;
   transition:
     border-color 0.15s ease,
-    color 0.15s ease;
+    color 0.15s ease,
+    box-shadow 0.15s ease;
   -webkit-app-region: no-drag;
   flex-shrink: 0;
 }
@@ -290,6 +321,7 @@
 .btn-bpm-step:hover {
   border-color: var(--color-accent);
   color: var(--color-accent);
+  box-shadow: 0 0 8px rgba(0, 217, 255, 0.2);
 }
 
 .bpm-input {
@@ -306,6 +338,7 @@
   -webkit-app-region: no-drag;
   -moz-appearance: textfield;
   appearance: textfield;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .bpm-input::-webkit-outer-spin-button,
@@ -315,6 +348,7 @@
 
 .bpm-input:focus {
   border-color: var(--color-accent);
+  box-shadow: 0 0 8px rgba(0, 217, 255, 0.2);
 }
 
 /* ── Time Signature Control ───────────────────────────────── */
@@ -336,10 +370,12 @@
   cursor: pointer;
   outline: none;
   -webkit-app-region: no-drag;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .timesig-select:focus {
   border-color: var(--color-accent);
+  box-shadow: 0 0 8px rgba(0, 217, 255, 0.2);
 }
 
 .timesig-sep {
@@ -355,7 +391,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  flex: 1; /* fills remaining height inside the Input panel */
+  flex: 1;
   border: 2px dashed var(--color-border);
   border-radius: var(--radius-md);
   padding: var(--space-xl);
@@ -363,32 +399,32 @@
   text-align: center;
   transition:
     border-color 0.2s ease,
-    background-color 0.2s ease;
+    background-color 0.2s ease,
+    box-shadow 0.2s ease;
   -webkit-app-region: no-drag;
 }
 
 .midi-dropzone:hover {
-  border-color: var(--color-text-muted);
+  border-color: var(--color-accent);
+  box-shadow: 0 0 15px rgba(0, 217, 255, 0.15);
 }
 
-/* Active drag-over state: accent border + very subtle tint */
 .midi-dropzone.dragging {
   border-color: var(--color-accent);
-  background-color: rgba(233, 69, 96, 0.05);
+  background-color: rgba(0, 217, 255, 0.05);
+  box-shadow: 0 0 20px rgba(0, 217, 255, 0.2);
 }
 
-/* File loaded state: solid green border */
 .midi-dropzone.loaded {
   border-style: solid;
   border-color: #4caf50;
+  box-shadow: 0 0 12px rgba(76, 175, 80, 0.2);
 }
 
-/* The hidden <input type="file"> — triggered programmatically on click */
 .midi-dropzone-input {
   display: none;
 }
 
-/* Inner content wrapper (icon + text) */
 .midi-dropzone-content {
   display: flex;
   flex-direction: column;
@@ -412,7 +448,6 @@
   color: var(--color-text-primary);
 }
 
-/* Monospace so the filename reads clearly */
 .midi-dropzone-filename {
   font-family: monospace;
   font-size: var(--font-size-base);
@@ -429,12 +464,12 @@
 .midi-dropzone-error {
   margin-top: var(--space-sm);
   font-size: var(--font-size-sm);
-  color: var(--color-accent);
+  color: #ff6b6b;
 }
 
 /* ── Export Panel (bottom, full width) ────────────────────── */
 .panel-export {
-  flex-shrink: 0; /* don't let it grow or shrink — fixed height */
+  flex-shrink: 0;
 }
 
 /* ── Groove Style Selector ───────────────────────────────── */
@@ -463,7 +498,7 @@
 
 .export-error {
   font-size: var(--font-size-sm);
-  color: var(--color-accent);
+  color: #ff6b6b;
 }
 
 .export-success {
@@ -479,28 +514,33 @@
   align-items: center;
   gap: var(--space-sm);
   padding: var(--space-sm) var(--space-lg);
-  background-color: var(--color-accent);
+  background: linear-gradient(135deg, #0066cc, #0099ff);
   color: white;
   font-size: var(--font-size-base);
   font-weight: 600;
-  border: none;
+  border: 1px solid rgba(0, 217, 255, 0.5);
   border-radius: var(--radius-md);
   cursor: pointer;
-  transition: background-color 0.2s ease;
-  /* Buttons must NOT be draggable — override the header drag region */
+  transition:
+    background 0.2s ease,
+    box-shadow 0.2s ease;
   -webkit-app-region: no-drag;
+  box-shadow: 0 0 15px rgba(0, 217, 255, 0.3);
 }
 
 .btn-export:hover {
-  background-color: var(--color-accent-hover);
+  background: linear-gradient(135deg, #0099ff, #00d9ff);
+  box-shadow: 0 0 25px rgba(0, 217, 255, 0.5);
 }
 
 .btn-export:disabled {
-  background-color: var(--color-text-muted);
+  background: rgba(255, 255, 255, 0.05);
+  border-color: var(--color-border);
+  color: var(--color-text-muted);
   cursor: not-allowed;
+  box-shadow: none;
 }
 
-/* Pulse animation while generating */
 @keyframes pulse-opacity {
   0%,
   100% {
@@ -516,7 +556,7 @@
   cursor: not-allowed;
 }
 
-/* ── Clear Button (Analysis panel header) ─────────────────── */
+/* ── Clear Button ─────────────────────────────────────────── */
 .btn-clear {
   padding: 2px var(--space-sm);
   background: none;
@@ -529,19 +569,21 @@
   cursor: pointer;
   transition:
     border-color 0.15s ease,
-    color 0.15s ease;
+    color 0.15s ease,
+    box-shadow 0.15s ease;
   -webkit-app-region: no-drag;
 }
 
 .btn-clear:hover {
   border-color: var(--color-accent);
   color: var(--color-accent);
+  box-shadow: 0 0 8px rgba(0, 217, 255, 0.2);
 }
 
-/* ── Parse Error (Input panel, below mode tabs) ───────────── */
+/* ── Parse Error ──────────────────────────────────────────── */
 .parse-error {
   font-size: var(--font-size-sm);
-  color: var(--color-accent);
+  color: #ff6b6b;
   margin-bottom: var(--space-sm);
 }
 
@@ -560,9 +602,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: rgba(10, 10, 14, 0.82);
+  background-color: rgba(0, 10, 26, 0.85);
   backdrop-filter: blur(4px);
-  pointer-events: none; /* let the drop event pass through to the .app div */
+  pointer-events: none;
 }
 
 .drop-overlay-content {
@@ -573,7 +615,8 @@
   padding: var(--space-xl);
   border: 2px dashed var(--color-accent);
   border-radius: var(--radius-lg);
-  background-color: rgba(233, 69, 96, 0.06);
+  background-color: rgba(0, 217, 255, 0.05);
+  box-shadow: 0 0 40px rgba(0, 217, 255, 0.2);
 }
 
 .drop-overlay-icon {
@@ -600,19 +643,28 @@
   gap: var(--space-md);
   flex: 1;
   min-height: 0;
+  flex-wrap: wrap; /* allows cards to wrap when window is narrow */
 }
 
 .instrument-card {
   flex: 1;
+  min-width: 180px; /* prevents cards from collapsing too thin */
   display: flex;
   flex-direction: column;
   gap: var(--space-sm);
-  background-color: var(--color-bg-input);
+  background: rgba(0, 0, 0, 0.6);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   padding: var(--space-sm) var(--space-md);
-  min-width: 0;
   overflow: hidden;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.instrument-card:hover {
+  border-color: rgba(0, 217, 255, 0.5);
+  box-shadow: 0 0 15px rgba(0, 217, 255, 0.12);
 }
 
 .instrument-card-header {
@@ -634,10 +686,10 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 1px;
-  color: var(--color-text-muted);
+  color: var(--color-accent);
+  text-shadow: 0 0 8px rgba(0, 217, 255, 0.4);
 }
 
-/* Loaded state: checkmark + truncated filename + Clear button */
 .instrument-card-loaded {
   display: flex;
   align-items: center;
@@ -678,18 +730,21 @@
   text-align: center;
   transition:
     border-color 0.2s ease,
-    background-color 0.2s ease;
+    background-color 0.2s ease,
+    box-shadow 0.2s ease;
   -webkit-app-region: no-drag;
   min-height: 60px;
 }
 
 .instrument-dropzone:hover {
-  border-color: var(--color-text-muted);
+  border-color: var(--color-accent);
+  box-shadow: 0 0 10px rgba(0, 217, 255, 0.15);
 }
 
 .instrument-dropzone.dragging {
   border-color: var(--color-accent);
-  background-color: rgba(233, 69, 96, 0.05);
+  background-color: rgba(0, 217, 255, 0.05);
+  box-shadow: 0 0 20px rgba(0, 217, 255, 0.2);
 }
 
 .instrument-dropzone-icon {
@@ -704,7 +759,7 @@
   line-height: 1.4;
 }
 
-/* Footer: Browse + Paste tab buttons */
+/* Footer: Browse button */
 .instrument-card-footer {
   display: flex;
   align-items: center;
@@ -724,16 +779,17 @@
   cursor: pointer;
   transition:
     border-color 0.15s ease,
-    color 0.15s ease;
+    color 0.15s ease,
+    box-shadow 0.15s ease;
   -webkit-app-region: no-drag;
 }
 
 .btn-browse:hover {
   border-color: var(--color-accent);
   color: var(--color-accent);
+  box-shadow: 0 0 8px rgba(0, 217, 255, 0.2);
 }
 
-/* Text-only button — no border, just link-style */
 .btn-link {
   background: none;
   border: none;
@@ -747,10 +803,10 @@
 }
 
 .btn-link:hover {
-  color: var(--color-text-primary);
+  color: var(--color-accent);
 }
 
-/* Textarea + Parse button when "Paste tab" is toggled */
+/* Textarea + Parse button — always visible */
 .instrument-tab-input {
   display: flex;
   flex-direction: column;
@@ -760,7 +816,7 @@
 
 .instrument-tab-textarea {
   padding: var(--space-xs) var(--space-sm);
-  background-color: var(--color-bg-primary);
+  background-color: var(--color-bg-input);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
   color: var(--color-text-primary);
@@ -770,6 +826,7 @@
   resize: none;
   outline: none;
   width: 100%;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .instrument-tab-textarea::placeholder {
@@ -778,13 +835,20 @@
 }
 
 .instrument-tab-textarea:focus {
-  border-color: var(--color-text-muted);
+  border-color: var(--color-accent);
+  box-shadow: 0 0 8px rgba(0, 217, 255, 0.2);
 }
 
-/* Error message below the dropzone */
 .instrument-card-error {
   font-size: var(--font-size-sm);
-  color: var(--color-accent);
+  color: #ff6b6b;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.instrument-card-warning {
+  font-size: var(--font-size-sm);
+  color: #ffd166;
   line-height: 1.4;
   word-break: break-word;
 }
@@ -810,19 +874,21 @@
   transition:
     border-color 0.15s ease,
     color 0.15s ease,
-    background-color 0.15s ease;
+    background-color 0.15s ease,
+    box-shadow 0.15s ease;
   -webkit-app-region: no-drag;
 }
 
 .instrument-tab:hover {
-  border-color: var(--color-text-muted);
+  border-color: var(--color-accent);
   color: var(--color-text-primary);
 }
 
 .instrument-tab.active {
   border-color: var(--color-accent);
   color: var(--color-accent);
-  background-color: rgba(233, 69, 96, 0.08);
+  background-color: rgba(0, 217, 255, 0.08);
+  box-shadow: 0 0 8px rgba(0, 217, 255, 0.2);
 }
 
 /* ── Export Panel Redesign ────────────────────────────────── */
@@ -848,7 +914,6 @@
   min-width: 0;
 }
 
-/* Format radio row */
 .export-format-row {
   display: flex;
   align-items: center;
@@ -881,7 +946,6 @@
   cursor: pointer;
 }
 
-/* Track list */
 .export-track-list {
   display: flex;
   flex-direction: column;
@@ -955,7 +1019,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: rgba(10, 10, 14, 0.82);
+  background-color: rgba(0, 10, 26, 0.88);
   backdrop-filter: blur(4px);
 }
 
@@ -965,11 +1029,14 @@
   align-items: center;
   gap: var(--space-md);
   padding: var(--space-xl);
-  background-color: var(--color-bg-secondary);
+  background: rgba(0, 0, 0, 0.9);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   min-width: 320px;
   max-width: 480px;
+  box-shadow:
+    0 0 30px rgba(0, 217, 255, 0.15),
+    0 15px 35px rgba(0, 0, 0, 0.8);
 }
 
 .dialog-title {
@@ -1004,14 +1071,16 @@
   transition:
     border-color 0.15s ease,
     background-color 0.15s ease,
-    color 0.15s ease;
+    color 0.15s ease,
+    box-shadow 0.15s ease;
   -webkit-app-region: no-drag;
 }
 
 .dialog-btn:hover {
   border-color: var(--color-accent);
-  background-color: rgba(233, 69, 96, 0.08);
+  background-color: rgba(0, 217, 255, 0.08);
   color: var(--color-accent);
+  box-shadow: 0 0 10px rgba(0, 217, 255, 0.2);
 }
 
 .dialog-cancel {
@@ -1107,7 +1176,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: rgba(10, 10, 14, 0.86);
+  background-color: rgba(0, 10, 26, 0.9);
   backdrop-filter: blur(4px);
 }
 
@@ -1117,10 +1186,13 @@
   width: 520px;
   max-width: calc(100vw - 48px);
   max-height: calc(100vh - 64px);
-  background-color: var(--color-bg-secondary);
+  background: rgba(0, 0, 0, 0.9);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   overflow: hidden;
+  box-shadow:
+    0 0 30px rgba(0, 217, 255, 0.15),
+    0 15px 35px rgba(0, 0, 0, 0.8);
 }
 
 .setup-guide-header {
@@ -1135,9 +1207,10 @@
 .setup-guide-title {
   font-size: var(--font-size-base);
   font-weight: 700;
-  color: var(--color-text-primary);
+  color: var(--color-accent);
   text-transform: uppercase;
   letter-spacing: 1px;
+  text-shadow: 0 0 10px rgba(0, 217, 255, 0.4);
 }
 
 .setup-guide-close {
@@ -1153,7 +1226,7 @@
 }
 
 .setup-guide-close:hover {
-  color: var(--color-text-primary);
+  color: var(--color-accent);
 }
 
 .setup-guide-body {
@@ -1196,7 +1269,7 @@
   display: inline-block;
   margin-top: 3px;
   padding: 2px 6px;
-  background-color: rgba(255, 255, 255, 0.04);
+  background-color: rgba(0, 217, 255, 0.05);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
   font-family: 'Consolas', 'Courier New', monospace;
@@ -1232,13 +1305,15 @@
   cursor: pointer;
   transition:
     border-color 0.15s ease,
-    color 0.15s ease;
+    color 0.15s ease,
+    box-shadow 0.15s ease;
   -webkit-app-region: no-drag;
 }
 
 .btn-check-status:hover:not(:disabled) {
   border-color: var(--color-accent);
   color: var(--color-accent);
+  box-shadow: 0 0 8px rgba(0, 217, 255, 0.2);
 }
 
 .btn-check-status:disabled {
@@ -1266,7 +1341,7 @@
 }
 
 .setup-status-row.status-fail {
-  color: var(--color-accent);
+  color: #ff6b6b;
 }
 
 .setup-status-path {
@@ -1289,7 +1364,7 @@
 /* ── Update Notification Banner ────────────────────────────── */
 .update-banner {
   flex-shrink: 0;
-  background-color: rgba(233, 69, 96, 0.06);
+  background-color: rgba(0, 217, 255, 0.04);
   border-bottom: 1px solid var(--color-border);
   padding: var(--space-sm) var(--space-lg);
   -webkit-app-region: no-drag;
@@ -1324,12 +1399,15 @@
   font-size: var(--font-size-sm);
   font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.15s ease;
+  transition:
+    background-color 0.15s ease,
+    box-shadow 0.15s ease;
   -webkit-app-region: no-drag;
 }
 
 .btn-update-primary:hover {
-  background-color: rgba(233, 69, 96, 0.12);
+  background-color: rgba(0, 217, 255, 0.1);
+  box-shadow: 0 0 10px rgba(0, 217, 255, 0.2);
 }
 
 .btn-update-secondary {
@@ -1363,7 +1441,7 @@
 
 .update-progress-fill {
   height: 100%;
-  background-color: var(--color-accent);
+  background: linear-gradient(90deg, #0066cc, #00d9ff);
   border-radius: 2px;
   transition: width 0.3s ease;
 }

@@ -7,19 +7,19 @@
 }
 
 :root {
-  /* Color palette — dark studio theme */
-  --color-bg-primary: #1a1a2e;
-  --color-bg-secondary: #16213e;
-  --color-bg-panel: #0f3460;
-  --color-bg-input: #0a0a1a;
-  --color-accent: #e94560;
-  --color-accent-hover: #c73652;
-  --color-text-primary: #eaeaea;
-  --color-text-muted: #8892a4;
-  --color-border: #2a2a4a;
+  /* Color palette — dark electric/cyber theme */
+  --color-bg-primary: #000000;
+  --color-bg-secondary: #0a1a2e;
+  --color-bg-panel: #001a33;
+  --color-bg-input: #050d1a;
+  --color-accent: #00d9ff;
+  --color-accent-hover: #0099ff;
+  --color-text-primary: #e0e1dd;
+  --color-text-muted: #6b8caf;
+  --color-border: rgba(0, 217, 255, 0.25);
 
   /* Typography */
-  --font-family: 'Segoe UI', system-ui, sans-serif;
+  --font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   --font-size-base: 14px;
   --font-size-sm: 12px;
   --font-size-lg: 18px;
@@ -49,6 +49,7 @@ body {
   font-family: var(--font-family);
   font-size: var(--font-size-base);
   color: var(--color-text-primary);
-  background-color: var(--color-bg-primary);
+  background: linear-gradient(135deg, #000000 0%, #0a1a2e 50%, #16213e 100%);
+  background-attachment: fixed;
   -webkit-font-smoothing: antialiased;
 }
