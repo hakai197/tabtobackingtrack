@@ -18,3 +18,14 @@ export type AnalysisResult = {
   key: string // e.g. "A minor" or "C major"
   notes: Note[]
 }
+
+export type InstrumentKey = 'guitar' | 'bass' | 'drums'
+
+export type InstrumentSlot = {
+  loaded: boolean
+  fileName: string | null
+  notes: Note[]
+  analysisResult: AnalysisResult | null
+}
+
+export type ExportMode = 'wav' | 'midi'

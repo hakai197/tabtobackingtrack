@@ -1,10 +1,12 @@
 import { ElectronAPI } from '@electron-toolkit/preload'
 
+export type ExportFile = {
+  filename: string
+  data: ArrayBuffer | string
+}
+
 export type ExportSessionPayload = {
-  guitarDiWav: ArrayBuffer
-  drumDiWav: ArrayBuffer
-  bassDiWav: ArrayBuffer
-  sessionTxt: string
+  files: ExportFile[]
 }
 
 export type ExportSessionResult = {

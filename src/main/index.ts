@@ -7,8 +7,8 @@ import icon from '../../resources/icon.png?asset'
 function createWindow(): void {
   // Create the browser window.
   const mainWindow = new BrowserWindow({
-    width: 900,
-    height: 670,
+    width: 1100,
+    height: 700,
     show: false,
     autoHideMenuBar: true,
     ...(process.platform === 'linux' ? { icon } : {}),
@@ -64,12 +64,14 @@ app.whenReady().then(() => {
 
     const folder = picked.filePaths[0]
     try {
-      await Promise.all([
-        writeFile(join(folder, 'guitar_di.wav'), Buffer.from(payload.guitarDiWav)),
-        writeFile(join(folder, 'drum_track.wav'), Buffer.from(payload.drumDiWav)),
-        writeFile(join(folder, 'bass_di.wav'), Buffer.from(payload.bassDiWav)),
-        writeFile(join(folder, 'session.txt'), payload.sessionTxt, 'utf-8')
-      ])
+      await Promise.all(
+        payload.files.map((f: { filename: string; data: ArrayBuffer | string }) => {
+          if (typeof f.data === 'string') {
+            return writeFile(join(folder, f.filename), f.data, 'utf-8')
+          }
+          return writeFile(join(folder, f.filename), Buffer.from(f.data))
+        })
+      )
       return { canceled: false, folder }
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Write failed'

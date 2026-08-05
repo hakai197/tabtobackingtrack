@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "PowerShell(cd \"C:\\\\Users\\\\nicholas.mathias\\\\PersonalRepos\\\\tab-to-backing-track\"; $content = Get-Content \"node_modules/@coderline/alphatab/dist/alphaTab.d.ts\" -Raw; $lines = $content -split \"`n\"; for \\($i = 15033; $i -lt 15080; $i++\\) { Write-Output \"${i}: $\\($lines[$i-1]\\)\" })",
+      "PowerShell(cd \"C:\\\\Users\\\\nicholas.mathias\\\\PersonalRepos\\\\tab-to-backing-track\"; $content = Get-Content \"node_modules/@coderline/alphatab/dist/alphaTab.d.ts\" -Raw; Select-String -InputObject $content -Pattern \"^export declare\" -AllMatches | ForEach-Object { $_.Matches } | Select-Object -First 50 | ForEach-Object { $_.Value })",
+      "Bash(git push *)",
+      "Bash(node -e \"const p=require\\('./package.json'\\); const all={...p.dependencies,...p.devDependencies}; Object.keys\\(all\\).filter\\(k=>k.includes\\('wav'\\)||k.includes\\('audio'\\)||k.includes\\('midi'\\)||k.includes\\('tone'\\)||k.includes\\('alpha'\\)\\).forEach\\(k=>console.log\\(k,all[k]\\)\\)\")",
+      "Bash(git rm *)"
+    ]
+  }
+}

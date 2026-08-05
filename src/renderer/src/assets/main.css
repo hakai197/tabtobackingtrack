@@ -593,3 +593,428 @@
   font-size: var(--font-size-sm);
   color: var(--color-text-muted);
 }
+
+/* ── Instrument Cards (three-up layout inside Input panel) ─── */
+.instrument-cards {
+  display: flex;
+  gap: var(--space-md);
+  flex: 1;
+  min-height: 0;
+}
+
+.instrument-card {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  background-color: var(--color-bg-input);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-sm) var(--space-md);
+  min-width: 0;
+  overflow: hidden;
+}
+
+.instrument-card-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  padding-bottom: var(--space-xs);
+  border-bottom: 1px solid var(--color-border);
+  flex-shrink: 0;
+}
+
+.instrument-card-icon {
+  font-size: 16px;
+  line-height: 1;
+}
+
+.instrument-card-name {
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--color-text-muted);
+}
+
+/* Loaded state: checkmark + truncated filename + Clear button */
+.instrument-card-loaded {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  flex: 1;
+  min-width: 0;
+}
+
+.instrument-loaded-check {
+  color: #4caf50;
+  font-size: var(--font-size-base);
+  flex-shrink: 0;
+}
+
+.instrument-loaded-filename {
+  flex: 1;
+  font-family: 'Consolas', 'Courier New', monospace;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+/* Drop zone inside each card */
+.instrument-dropzone {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-xs);
+  border: 2px dashed var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: var(--space-md) var(--space-sm);
+  cursor: pointer;
+  text-align: center;
+  transition:
+    border-color 0.2s ease,
+    background-color 0.2s ease;
+  -webkit-app-region: no-drag;
+  min-height: 60px;
+}
+
+.instrument-dropzone:hover {
+  border-color: var(--color-text-muted);
+}
+
+.instrument-dropzone.dragging {
+  border-color: var(--color-accent);
+  background-color: rgba(233, 69, 96, 0.05);
+}
+
+.instrument-dropzone-icon {
+  font-size: 20px;
+  color: var(--color-text-muted);
+  line-height: 1;
+}
+
+.instrument-dropzone-hint {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  line-height: 1.4;
+}
+
+/* Footer: Browse + Paste tab buttons */
+.instrument-card-footer {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  flex-shrink: 0;
+}
+
+.btn-browse {
+  padding: 3px var(--space-sm);
+  background: none;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    color 0.15s ease;
+  -webkit-app-region: no-drag;
+}
+
+.btn-browse:hover {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+/* Text-only button — no border, just link-style */
+.btn-link {
+  background: none;
+  border: none;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  -webkit-app-region: no-drag;
+}
+
+.btn-link:hover {
+  color: var(--color-text-primary);
+}
+
+/* Textarea + Parse button when "Paste tab" is toggled */
+.instrument-tab-input {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  flex-shrink: 0;
+}
+
+.instrument-tab-textarea {
+  padding: var(--space-xs) var(--space-sm);
+  background-color: var(--color-bg-primary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-primary);
+  font-family: 'Consolas', 'Courier New', monospace;
+  font-size: var(--font-size-sm);
+  line-height: 1.5;
+  resize: none;
+  outline: none;
+  width: 100%;
+}
+
+.instrument-tab-textarea::placeholder {
+  color: var(--color-text-muted);
+  opacity: 0.6;
+}
+
+.instrument-tab-textarea:focus {
+  border-color: var(--color-text-muted);
+}
+
+/* Error message below the dropzone */
+.instrument-card-error {
+  font-size: var(--font-size-sm);
+  color: var(--color-accent);
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+/* ── Analysis Panel: Instrument Tab Strip ─────────────────── */
+.instrument-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: var(--space-md);
+  flex-shrink: 0;
+}
+
+.instrument-tab {
+  padding: 3px var(--space-sm);
+  background: none;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    color 0.15s ease,
+    background-color 0.15s ease;
+  -webkit-app-region: no-drag;
+}
+
+.instrument-tab:hover {
+  border-color: var(--color-text-muted);
+  color: var(--color-text-primary);
+}
+
+.instrument-tab.active {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+  background-color: rgba(233, 69, 96, 0.08);
+}
+
+/* ── Export Panel Redesign ────────────────────────────────── */
+.export-layout {
+  display: flex;
+  gap: var(--space-xl);
+  align-items: flex-start;
+}
+
+.export-left {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  min-width: 0;
+}
+
+.export-right {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  min-width: 0;
+}
+
+/* Format radio row */
+.export-format-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  margin-bottom: var(--space-xs);
+}
+
+.export-format-label {
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.export-format-option {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
+  cursor: pointer;
+  -webkit-app-region: no-drag;
+}
+
+.export-format-option input[type='radio'] {
+  accent-color: var(--color-accent);
+  cursor: pointer;
+}
+
+/* Track list */
+.export-track-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.export-track-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+}
+
+.export-track-label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  cursor: pointer;
+  flex: 1;
+  min-width: 0;
+  -webkit-app-region: no-drag;
+}
+
+.export-track-label.disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.export-track-label input[type='checkbox'] {
+  accent-color: var(--color-accent);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.export-track-label.disabled input[type='checkbox'] {
+  cursor: not-allowed;
+}
+
+.export-track-name {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-text-primary);
+  white-space: nowrap;
+}
+
+.export-track-filename {
+  font-family: 'Consolas', 'Courier New', monospace;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.export-track-status {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.export-track-status.loaded {
+  color: #4caf50;
+}
+
+/* ── Instrument Selection Dialog ─────────────────────────── */
+.dialog-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(10, 10, 14, 0.82);
+  backdrop-filter: blur(4px);
+}
+
+.dialog {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-xl);
+  background-color: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  min-width: 320px;
+  max-width: 480px;
+}
+
+.dialog-title {
+  font-size: var(--font-size-base);
+  font-weight: 700;
+  color: var(--color-text-primary);
+  text-align: center;
+}
+
+.dialog-filename {
+  font-family: 'Consolas', 'Courier New', monospace;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  text-align: center;
+  word-break: break-all;
+}
+
+.dialog-buttons {
+  display: flex;
+  gap: var(--space-sm);
+}
+
+.dialog-btn {
+  padding: var(--space-sm) var(--space-md);
+  background: none;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-base);
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    background-color 0.15s ease,
+    color 0.15s ease;
+  -webkit-app-region: no-drag;
+}
+
+.dialog-btn:hover {
+  border-color: var(--color-accent);
+  background-color: rgba(233, 69, 96, 0.08);
+  color: var(--color-accent);
+}
+
+.dialog-cancel {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
