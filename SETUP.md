@@ -55,10 +55,12 @@ You don't need all three instruments. Load just the ones you have — the rest s
 ## 2. Installing the App
 
 1. Go to the [Releases](https://github.com/hakai197/tabtobackingtrack/releases) page on GitHub.
-2. Under the latest release, download **`Tab-to-Backing-Track-Setup.exe`**.
-3. Run the installer. When Windows shows a SmartScreen warning ("Windows protected your PC"), click **More info → Run anyway**. This appears because the app is not code-signed yet.
-4. The installer creates a desktop shortcut. No admin rights are required.
-5. Open the app. That's it — nothing else to install for Standard mode.
+2. Under the latest release, download **`Tab-to-Backing-Track-win32-x64.zip`**.
+3. Extract the zip to a folder of your choice (e.g. `C:\Program Files\Tab to Backing Track\` or your Desktop).
+4. Open `Tab to Backing Track.exe` inside the extracted folder.
+5. When Windows shows a SmartScreen warning ("Windows protected your PC"), click **More info → Run anyway**. This appears because the app is not code-signed yet.
+
+No installer, no admin rights, nothing else to install for Standard mode.
 
 > **Updates:** The app checks for new versions automatically on each launch. When an update is available, a banner appears at the top of the window. Click **Download Update**, wait for the download, then **Restart Now** to apply it.
 
@@ -308,7 +310,7 @@ Enhanced mode still outputs WAV files with the same filenames — you use them i
 
 ### The app won't open / SmartScreen blocks it
 
-Click **More info → Run anyway** on the SmartScreen dialog. This happens because the installer isn't code-signed. The app is open source — you can inspect the code at [github.com/hakai197/tabtobackingtrack](https://github.com/hakai197/tabtobackingtrack).
+Click **More info → Run anyway** on the SmartScreen dialog. This happens because the executable isn't code-signed. The app is open source — you can inspect the code at [github.com/hakai197/tabtobackingtrack](https://github.com/hakai197/tabtobackingtrack).
 
 ---
 

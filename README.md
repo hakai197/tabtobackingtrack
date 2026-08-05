@@ -65,11 +65,11 @@ It was built specifically for the NAM + SSD reamping workflow: record or notate 
 ## Installation
 
 1. Go to the **[Releases](https://github.com/hakai197/tabtobackingtrack/releases)** page.
-2. Download the latest `Tab-to-Backing-Track-Setup.exe`.
-3. Run the installer — no admin rights required.
-4. Open the app from your desktop shortcut.
+2. Download the latest `Tab-to-Backing-Track-win32-x64.zip`.
+3. Extract the zip to a folder of your choice.
+4. Open `Tab to Backing Track.exe` inside the extracted folder.
 
-Everything is bundled. No Node.js, no Python, no extra installs needed. The app will notify you automatically when a new version is available.
+Everything is bundled. No Node.js, no Python, no installer required. The app will notify you automatically when a new version is available.
 
 > For a detailed first-use walkthrough, DAW integration steps, and Enhanced Audio mode setup, see **[SETUP.md](SETUP.md)**.
 
