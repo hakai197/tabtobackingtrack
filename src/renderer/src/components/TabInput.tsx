@@ -23,17 +23,22 @@ export function TabInput({ onAnalysis }: Props): JSX.Element {
 
   function handleParse(): void {
     setError(null)
-    try {
-      const result = parseTab(text)
-      if (result.notes.length === 0) {
-        setError('No notes found. Is this a valid 6-string guitar tab?')
-        return
-      }
-      onAnalysis(result)
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Could not parse this tab.'
-      setError(message)
+    const parsed = parseTab(text)
+    if (parsed.errors.length > 0) {
+      setError(parsed.errors[0])
+      return
     }
+    if (parsed.notes.length === 0) {
+      setError('No notes found. Is this a valid tab?')
+      return
+    }
+    const result: AnalysisResult = {
+      bpm: parsed.analysisResult.bpm,
+      timeSig: `${parsed.analysisResult.timeSignature.numerator}/${parsed.analysisResult.timeSignature.denominator}`,
+      key: parsed.analysisResult.detectedKey ?? 'Unknown',
+      notes: parsed.notes
+    }
+    onAnalysis(result)
   }
 
   return (

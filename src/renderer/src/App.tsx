@@ -1,4 +1,4 @@
-import { useState, useRef, type JSX } from 'react'
+import { useState, useRef, useEffect, type JSX } from 'react'
 import { UpdateNotification } from './components/UpdateNotification'
 import { Midi } from '@tonejs/midi'
 import './assets/base.css'
@@ -10,7 +10,7 @@ import { InstrumentSelectDialog } from './components/InstrumentSelectDialog'
 import { parseGuitarPro } from './utils/guitarProParser'
 import { parseMidi } from './utils/midiParser'
 import { parseMusicXml } from './utils/musicXmlParser'
-import { parseTab } from './utils/tabParser'
+import { parseTab, runTabParserTests } from './utils/tabParser'
 import { generateDiWav } from './utils/diWavGenerator'
 import { generateDrumDiWav, type DrumStyle } from './utils/drumDiGenerator'
 import { generateBassDiWav, type BassStyle } from './utils/bassDiGenerator'
@@ -68,6 +68,11 @@ function clampBPM(v: number): number {
 }
 
 function App(): JSX.Element {
+  // ── Dev-mode self-tests ─────────────────────────────────────
+  useEffect(() => {
+    if (import.meta.env.DEV) runTabParserTests()
+  }, [])
+
   // ── Instrument slots ────────────────────────────────────────
   const [guitar, setGuitar] = useState<InstrumentSlot>(emptySlot())
   const [bass, setBass] = useState<InstrumentSlot>(emptySlot())
@@ -191,7 +196,14 @@ function App(): JSX.Element {
       } else if (XML_RE.test(file.name)) {
         result = parseMusicXml(await file.text())
       } else {
-        result = parseTab(await file.text())
+        const parsed = parseTab(await file.text())
+        if (parsed.errors.length > 0) throw new Error(parsed.errors[0])
+        result = {
+          bpm: parsed.analysisResult.bpm,
+          timeSig: `${parsed.analysisResult.timeSignature.numerator}/${parsed.analysisResult.timeSignature.denominator}`,
+          key: parsed.analysisResult.detectedKey ?? 'Unknown',
+          notes: parsed.notes
+        }
       }
       loadSlot(instrument, result, file.name)
     } catch {

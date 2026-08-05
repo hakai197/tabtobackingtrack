@@ -33,6 +33,7 @@ export function InstrumentCard({
 }: Props): JSX.Element {
   const [isDragging, setIsDragging] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [warnings, setWarnings] = useState<string[]>([])
   const [showText, setShowText] = useState(false)
   const [tabText, setTabText] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -40,6 +41,7 @@ export function InstrumentCard({
 
   async function loadFile(file: File): Promise<void> {
     setError(null)
+    setWarnings([])
     try {
       let result: AnalysisResult
       if (GP_RE.test(file.name)) {
@@ -49,7 +51,15 @@ export function InstrumentCard({
       } else if (XML_RE.test(file.name)) {
         result = parseMusicXml(await file.text())
       } else {
-        result = parseTab(await file.text())
+        const parsed = parseTab(await file.text())
+        if (parsed.errors.length > 0) throw new Error(parsed.errors[0])
+        if (parsed.warnings.length > 0) setWarnings(parsed.warnings)
+        result = {
+          bpm: parsed.analysisResult.bpm,
+          timeSig: `${parsed.analysisResult.timeSignature.numerator}/${parsed.analysisResult.timeSignature.denominator}`,
+          key: parsed.analysisResult.detectedKey ?? 'Unknown',
+          notes: parsed.notes
+        }
       }
       onLoad(result, file.name)
       setShowText(false)
@@ -86,14 +96,22 @@ export function InstrumentCard({
 
   function onParseTab(): void {
     setError(null)
-    try {
-      const result = parseTab(tabText)
-      onLoad(result, 'pasted tab')
-      setShowText(false)
-      setTabText('')
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to parse tab')
+    setWarnings([])
+    const parsed = parseTab(tabText)
+    if (parsed.errors.length > 0) {
+      setError(parsed.errors[0])
+      return
     }
+    if (parsed.warnings.length > 0) setWarnings(parsed.warnings)
+    const result: AnalysisResult = {
+      bpm: parsed.analysisResult.bpm,
+      timeSig: `${parsed.analysisResult.timeSignature.numerator}/${parsed.analysisResult.timeSignature.denominator}`,
+      key: parsed.analysisResult.detectedKey ?? 'Unknown',
+      notes: parsed.notes
+    }
+    onLoad(result, 'pasted tab')
+    setShowText(false)
+    setTabText('')
   }
 
   return (
@@ -174,6 +192,7 @@ export function InstrumentCard({
           )}
 
           {error && <p className="instrument-card-error">{error}</p>}
+          {warnings.length > 0 && <p className="instrument-card-warning">{warnings[0]}</p>}
         </>
       )}
     </div>
