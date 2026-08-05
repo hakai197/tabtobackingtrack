@@ -156,12 +156,23 @@ export async function generateBassDiWav(
 
   const bassNotes = buildBassNotes(segments, style, bpm)
 
-  const lastEnd = Math.max(...bassNotes.map((n) => n.startTime + n.duration))
+  // Filter out any notes with non-finite or non-positive values.
+  const MIN_DURATION = ATTACK_SEC + RELEASE_SEC
+  const safeBassNotes = bassNotes.filter(
+    (n) =>
+      isFinite(n.pitch) &&
+      isFinite(n.startTime) &&
+      n.startTime >= 0 &&
+      isFinite(n.duration) &&
+      n.duration > 0
+  )
+
+  const lastEnd = Math.max(...safeBassNotes.map((n) => n.startTime + n.duration), 0.5)
   const totalDuration = lastEnd + 0.5
 
   const ctx = new OfflineAudioContext(1, Math.ceil(totalDuration * SAMPLE_RATE), SAMPLE_RATE)
 
-  for (const note of bassNotes) {
+  for (const note of safeBassNotes) {
     const osc = ctx.createOscillator()
     const env = ctx.createGain()
 
@@ -171,7 +182,9 @@ export async function generateBassDiWav(
 
     const gainValue = (note.velocity / 127) * NOTE_GAIN
     const start = note.startTime
-    const end = note.startTime + note.duration
+    // Clamp duration so the envelope always has room for both attack and release.
+    const duration = Math.max(note.duration, MIN_DURATION)
+    const end = start + duration
     const releaseStart = Math.max(start + ATTACK_SEC, end - RELEASE_SEC)
 
     env.gain.setValueAtTime(0, start)
@@ -187,4 +200,5 @@ export async function generateBassDiWav(
   }
 
   return encodeWav(await ctx.startRendering())
+
 }

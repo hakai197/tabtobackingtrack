@@ -61,8 +61,20 @@ function encodeWav(audioBuffer: AudioBuffer): ArrayBuffer {
 export async function generateDiWav(notes: Note[]): Promise<ArrayBuffer> {
   if (notes.length === 0) throw new Error('No notes to render.')
 
+  // Filter out any notes with non-finite or non-positive values before touching AudioParams.
+  const MIN_DURATION = ATTACK_SEC + RELEASE_SEC
+  const safeNotes = notes.filter(
+    (n) =>
+      isFinite(n.pitch) &&
+      isFinite(n.startTime) &&
+      n.startTime >= 0 &&
+      isFinite(n.duration) &&
+      n.duration > 0
+  )
+  if (safeNotes.length === 0) throw new Error('No valid notes to render.')
+
   // Find the end of the last note and add a short tail of silence.
-  const lastEnd = Math.max(...notes.map((n) => n.startTime + n.duration))
+  const lastEnd = Math.max(...safeNotes.map((n) => n.startTime + n.duration))
   const totalDuration = lastEnd + 0.5
 
   const context = new OfflineAudioContext(
@@ -71,7 +83,7 @@ export async function generateDiWav(notes: Note[]): Promise<ArrayBuffer> {
     SAMPLE_RATE
   )
 
-  for (const note of notes) {
+  for (const note of safeNotes) {
     const osc = context.createOscillator()
     const env = context.createGain()
 
@@ -79,7 +91,9 @@ export async function generateDiWav(notes: Note[]): Promise<ArrayBuffer> {
     osc.frequency.value = midiToHz(note.pitch)
 
     const start = note.startTime
-    const end = note.startTime + note.duration
+    // Clamp duration so the envelope always has room for both attack and release.
+    const duration = Math.max(note.duration, MIN_DURATION)
+    const end = start + duration
     // releaseStart must never be earlier than the end of the attack ramp.
     const releaseStart = Math.max(start + ATTACK_SEC, end - RELEASE_SEC)
 
