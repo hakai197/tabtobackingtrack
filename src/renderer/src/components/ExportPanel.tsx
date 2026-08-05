@@ -2,6 +2,7 @@ import type { JSX } from 'react'
 import type { DrumStyle } from '../utils/drumDiGenerator'
 import type { BassStyle } from '../utils/bassDiGenerator'
 import type { InstrumentSlot, ExportMode } from '../types'
+import { AudioQualityPanel, type AudioQuality, type FluidSynthStatus } from './AudioQualityPanel'
 
 const DRUM_STYLES: { value: DrumStyle; label: string }[] = [
   { value: 'rock', label: 'Rock' },
@@ -32,6 +33,9 @@ type Props = {
   onDrumStyleChange: (s: DrumStyle) => void
   bassStyle: BassStyle
   onBassStyleChange: (s: BassStyle) => void
+  audioQuality: AudioQuality
+  onAudioQualityChange: (q: AudioQuality) => void
+  onCheckFluidSynth: () => Promise<FluidSynthStatus>
   onExport: () => void
   isGenerating: boolean
   generateError: string | null
@@ -54,6 +58,9 @@ export function ExportPanel({
   onDrumStyleChange,
   bassStyle,
   onBassStyleChange,
+  audioQuality,
+  onAudioQualityChange,
+  onCheckFluidSynth,
   onExport,
   isGenerating,
   generateError,
@@ -80,8 +87,14 @@ export function ExportPanel({
       <h2 className="panel-title">Export</h2>
 
       <div className="export-layout">
-        {/* Left: format radio + track checkboxes */}
+        {/* Left: audio quality + format radio + track checkboxes */}
         <div className="export-left">
+          <AudioQualityPanel
+            audioQuality={audioQuality}
+            onAudioQualityChange={onAudioQualityChange}
+            onCheckFluidSynth={onCheckFluidSynth}
+          />
+
           <div className="export-format-row">
             <span className="export-format-label">Format</span>
             <label className="export-format-option">

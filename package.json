@@ -1,6 +1,6 @@
 {
   "name": "tab-to-backing-track",
-  "version": "1.0.0",
+  "version": "1.2.0",
   "description": "An Electron application with React and TypeScript",
   "main": "./out/main/index.js",
   "author": "example.com",
@@ -36,7 +36,9 @@
       "target": [
         {
           "target": "nsis",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         }
       ],
       "icon": "build/icon.ico"
@@ -47,6 +49,11 @@
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "Tab to Backing Track"
+    },
+    "publish": {
+      "provider": "github",
+      "owner": "hakai197",
+      "repo": "tabtobackingtrack"
     }
   },
   "dependencies": {
@@ -54,6 +61,7 @@
     "@electron-toolkit/preload": "^3.0.2",
     "@electron-toolkit/utils": "^4.0.0",
     "@tonejs/midi": "^2.0.28",
+    "electron-log": "^5.4.4",
     "electron-updater": "^6.3.9"
   },
   "devDependencies": {

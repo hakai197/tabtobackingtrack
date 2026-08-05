@@ -1,4 +1,5 @@
 import { useState, useRef, type JSX } from 'react'
+import { UpdateNotification } from './components/UpdateNotification'
 import { Midi } from '@tonejs/midi'
 import './assets/base.css'
 import './assets/main.css'
@@ -19,6 +20,9 @@ import {
   detectInstrumentFromFilename,
   detectInstrumentFromGuitarPro
 } from './utils/instrumentDetector'
+import { drumPatternToNotes } from './utils/drumPatternToNotes'
+import { extractBassNotes } from './utils/bassNoteExtractor'
+import type { AudioQuality } from './components/AudioQualityPanel'
 import type {
   AnalysisResult,
   Note,
@@ -82,6 +86,7 @@ function App(): JSX.Element {
   const [exportDrums, setExportDrums] = useState(false)
   const [drumStyle, setDrumStyle] = useState<DrumStyle>('rock')
   const [bassStyle, setBassStyle] = useState<BassStyle>('root')
+  const [audioQuality, setAudioQuality] = useState<AudioQuality>('standard')
   const [isGenerating, setIsGenerating] = useState(false)
   const [generateError, setGenerateError] = useState<string | null>(null)
   const [exportFolder, setExportFolder] = useState<string | null>(null)
@@ -229,61 +234,148 @@ function App(): JSX.Element {
 
   // ── Export ──────────────────────────────────────────────────
 
+  async function handleGenerateStandard(): Promise<void> {
+    const fileEntries: Array<[string, ArrayBuffer | string]> = []
+    const wavPromises: Array<Promise<void>> = []
+
+    if (exportGuitar && guitar.loaded) {
+      const scaled = scaleNotes(guitar.notes, guitar.analysisResult!.bpm, userBPM)
+      wavPromises.push(
+        generateDiWav(scaled).then((wav) => {
+          fileEntries.push(['guitar_di.wav', wav])
+        })
+      )
+    }
+
+    if (exportBass && bass.loaded) {
+      const scaled = scaleNotes(bass.notes, bass.analysisResult!.bpm, userBPM)
+      if (exportMode === 'wav') {
+        wavPromises.push(
+          generateBassDiWav(userBPM, bassStyle, scaled).then((wav) => {
+            fileEntries.push(['bass_di.wav', wav])
+          })
+        )
+      } else {
+        fileEntries.push(['bass_track.mid', generateBassMidi(userBPM, bassStyle, scaled)])
+      }
+    }
+
+    if (exportDrums && drums.loaded) {
+      const scaled = scaleNotes(drums.notes, drums.analysisResult!.bpm, userBPM)
+      if (exportMode === 'wav') {
+        wavPromises.push(
+          generateDrumDiWav(userBPM, drumStyle, scaled).then((wav) => {
+            fileEntries.push(['drum_track.wav', wav])
+          })
+        )
+      } else {
+        fileEntries.push(['drum_track.mid', generateDrumMidi(userBPM, drumStyle, scaled)])
+      }
+    }
+
+    await Promise.all(wavPromises)
+
+    fileEntries.push(['session.txt', buildSessionTxt()])
+
+    const result = await window.api.exportSession({
+      files: fileEntries.map(([filename, data]) => ({ filename, data }))
+    })
+
+    if (!result.canceled) {
+      if (result.error) setGenerateError(result.error)
+      else setExportFolder(result.folder ?? null)
+    }
+  }
+
+  async function handleGenerateEnhanced(): Promise<void> {
+    const folderResult = await window.api.pickExportFolder()
+    if (folderResult.canceled || !folderResult.folder) return
+    const folder = folderResult.folder
+
+    const fsStatus = await window.api.checkFluidSynth()
+    if (!fsStatus.fluidSynthFound || !fsStatus.soundFontFound) {
+      const missing = !fsStatus.fluidSynthFound ? 'FluidSynth binary' : 'SoundFont file'
+      setGenerateError(
+        `Enhanced mode requires ${missing}. Use "View Setup Guide" in the Export panel.`
+      )
+      return
+    }
+
+    const tasks: Array<Promise<{ success: boolean; error?: string }>> = []
+
+    if (exportGuitar && guitar.loaded) {
+      const scaled = scaleNotes(guitar.notes, guitar.analysisResult!.bpm, userBPM)
+      tasks.push(
+        window.api.renderInstrumentWavEnhanced({
+          notes: scaled,
+          instrument: 'guitar',
+          bpm: userBPM,
+          timeSignature: userTimeSig,
+          folder,
+          filename: 'guitar_di.wav'
+        })
+      )
+    }
+
+    if (exportBass && bass.loaded) {
+      const scaled = scaleNotes(bass.notes, bass.analysisResult!.bpm, userBPM)
+      const bassNotes = extractBassNotes(userBPM, bassStyle, scaled)
+      tasks.push(
+        window.api.renderInstrumentWavEnhanced({
+          notes: bassNotes,
+          instrument: 'bass',
+          bpm: userBPM,
+          timeSignature: userTimeSig,
+          folder,
+          filename: 'bass_di.wav'
+        })
+      )
+    }
+
+    if (exportDrums && drums.loaded) {
+      const scaledDrums = scaleNotes(drums.notes, drums.analysisResult!.bpm, userBPM)
+      const songLength =
+        scaledDrums.length > 0
+          ? Math.max(...scaledDrums.map((n) => n.startTime + n.duration))
+          : (60 / userBPM) * 16
+      const drumNotes = drumPatternToNotes(userBPM, drumStyle, songLength)
+      tasks.push(
+        window.api.renderInstrumentWavEnhanced({
+          notes: drumNotes,
+          instrument: 'drums',
+          bpm: userBPM,
+          timeSignature: userTimeSig,
+          folder,
+          filename: 'drum_track.wav'
+        })
+      )
+    }
+
+    const results = await Promise.all(tasks)
+    const failed = results.find((r) => !r.success)
+    if (failed) {
+      setGenerateError(failed.error ?? 'FluidSynth rendering failed.')
+      return
+    }
+
+    await window.api.writeTextFile({
+      folder,
+      filename: 'session.txt',
+      content: buildSessionTxt(true)
+    })
+
+    setExportFolder(folder)
+  }
+
   async function handleGenerate(): Promise<void> {
     setIsGenerating(true)
     setGenerateError(null)
     setExportFolder(null)
-
     try {
-      const fileEntries: Array<[string, ArrayBuffer | string]> = []
-      const wavPromises: Array<Promise<void>> = []
-
-      if (exportGuitar && guitar.loaded) {
-        const scaled = scaleNotes(guitar.notes, guitar.analysisResult!.bpm, userBPM)
-        wavPromises.push(
-          generateDiWav(scaled).then((wav) => {
-            fileEntries.push(['guitar_di.wav', wav])
-          })
-        )
-      }
-
-      if (exportBass && bass.loaded) {
-        const scaled = scaleNotes(bass.notes, bass.analysisResult!.bpm, userBPM)
-        if (exportMode === 'wav') {
-          wavPromises.push(
-            generateBassDiWav(userBPM, bassStyle, scaled).then((wav) => {
-              fileEntries.push(['bass_di.wav', wav])
-            })
-          )
-        } else {
-          fileEntries.push(['bass_track.mid', generateBassMidi(userBPM, bassStyle, scaled)])
-        }
-      }
-
-      if (exportDrums && drums.loaded) {
-        const scaled = scaleNotes(drums.notes, drums.analysisResult!.bpm, userBPM)
-        if (exportMode === 'wav') {
-          wavPromises.push(
-            generateDrumDiWav(userBPM, drumStyle, scaled).then((wav) => {
-              fileEntries.push(['drum_track.wav', wav])
-            })
-          )
-        } else {
-          fileEntries.push(['drum_track.mid', generateDrumMidi(userBPM, drumStyle, scaled)])
-        }
-      }
-
-      await Promise.all(wavPromises)
-
-      fileEntries.push(['session.txt', buildSessionTxt()])
-
-      const result = await window.api.exportSession({
-        files: fileEntries.map(([filename, data]) => ({ filename, data }))
-      })
-
-      if (!result.canceled) {
-        if (result.error) setGenerateError(result.error)
-        else setExportFolder(result.folder ?? null)
+      if (audioQuality === 'enhanced') {
+        await handleGenerateEnhanced()
+      } else {
+        await handleGenerateStandard()
       }
     } catch (err) {
       setGenerateError(err instanceof Error ? err.message : 'Generation failed.')
@@ -292,16 +384,17 @@ function App(): JSX.Element {
     }
   }
 
-  function buildSessionTxt(): string {
+  function buildSessionTxt(isEnhanced = false): string {
     const now = new Date()
     const timeStr = now.toTimeString().split(' ')[0] ?? ''
+    const formatLabel = isEnhanced ? 'WAV (FluidSynth Enhanced)' : exportMode.toUpperCase()
     const lines: string[] = [
       'TAB TO BACKING TRACK — SESSION NOTES',
       '=====================================',
       `Date:            ${now.toDateString()} ${timeStr}`,
       `BPM:             ${userBPM}`,
       `Time Signature:  ${userTimeSig.numerator}/${userTimeSig.denominator}`,
-      `Export Format:   ${exportMode.toUpperCase()}`,
+      `Export Format:   ${formatLabel}`,
       ''
     ]
 
@@ -369,6 +462,9 @@ function App(): JSX.Element {
 
   return (
     <div className="app" onDragOver={onAppDragOver} onDragLeave={onAppDragLeave} onDrop={onAppDrop}>
+      {/* ── Update notification banner (hidden when no update) ── */}
+      <UpdateNotification />
+
       {/* ── Header ─────────────────────────────────────────── */}
       <header className="app-header">
         <h1>
@@ -551,6 +647,9 @@ function App(): JSX.Element {
           onDrumStyleChange={setDrumStyle}
           bassStyle={bassStyle}
           onBassStyleChange={setBassStyle}
+          audioQuality={audioQuality}
+          onAudioQualityChange={setAudioQuality}
+          onCheckFluidSynth={() => window.api.checkFluidSynth()}
           onExport={handleGenerate}
           isGenerating={isGenerating}
           generateError={generateError}
