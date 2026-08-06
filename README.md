@@ -218,6 +218,55 @@ ASCII tabs are the most common format found on the internet — the kind you cop
 - Chord-only charts (Am - G - C - F)
 - Custom tunings (any string label format)
 
+**Format examples — copy these patterns exactly:**
+
+Guitar tab — 6 string lines, lowercase `e` = high string, uppercase `E` = low string:
+```
+e|--0---3---0---2--|
+B|--1---3---1---3--|
+G|--0---0---0---2--|
+D|--2---0---2---0--|
+A|--3---2---3---0--|
+E|--0---3---0---2--|
+```
+
+Bass tab — 4 string lines, no lowercase `e`:
+```
+G|--5---5---3---3--|
+D|--5---5---3---3--|
+A|--3---3---1---1--|
+E|--0---0---0---0--|
+```
+
+Five-string bass: add a `B` line at the bottom for the low B string.
+
+Drum tab — each line starts with a drum label followed by `|` and hit characters (`x` = normal hit, `o` = accent, `-` = rest):
+```
+K |x---x---x---x---|
+S |----x-------x---|
+HH|x-x-x-x-x-x-x-x|
+```
+
+Supported drum labels: `K` or `BD` (kick), `S` or `SD` (snare), `HH` (hi-hat closed), `OH` (hi-hat open), `CC` or `Crash` (crash), `RC` or `Ride` (ride), `T1`/`T2`/`T3` (toms).
+
+ChordPro — chord names in `[brackets]` inline with lyrics:
+```
+[Am]I walked the [G]line
+[C]all the [F]way home
+```
+
+Chord-only — chord names separated by spaces, dashes, or pipes. Every line must contain only chord names:
+```
+Am - G - C - F
+Dm - Am - E - Am
+```
+
+**What the parser needs to detect your format:**
+- Guitar/bass tab: at least 2 string label lines (letter + `|` or `-` followed by fret numbers). Six unique labels including lowercase `e` → guitar; four or five labels without lowercase `e` → bass.
+- Drum tab: at least 2 lines that start with a recognized drum label followed by `|` or `:`.
+- ChordPro: at least one `[Chord]` marker anywhere in the text.
+- Chord-only: every non-empty line contains only chord names and separators — no fret numbers, no lyrics.
+
 **How to load into the app:**
 1. Copy the tab text from any website
 2. Click the instrument slot you want to load
