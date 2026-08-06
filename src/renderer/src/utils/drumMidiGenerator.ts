@@ -61,8 +61,18 @@ const PATTERNS: Record<DrumStyle, DrumHit[]> = {
   ]
 }
 
-// Synthesize a drum pattern as a standard MIDI file using channel 9 (GM percussion).
+// Synthesize a drum track as a standard MIDI file using channel 9 (GM percussion).
+// When notes are provided (e.g. from a GP5 file) they are written directly.
+// When notes is empty the chosen groove pattern is tiled to fill the song length.
 export function generateDrumMidi(bpm: number, style: DrumStyle, notes: Note[]): ArrayBuffer {
+  if (import.meta.env.DEV) {
+    console.log('generateDrumMidi:', {
+      notesProvided: notes.length,
+      usingGP5Notes: notes.length > 0,
+      drumStyle: style
+    })
+  }
+
   const secondsPerTick = 60 / (bpm * TICKS_PER_QUARTER)
   const barDuration = TICKS_PER_BAR * secondsPerTick
 
@@ -75,16 +85,26 @@ export function generateDrumMidi(bpm: number, style: DrumStyle, notes: Note[]): 
   const track = midi.addTrack()
   track.channel = 9 // GM percussion channel
 
-  // Crash cymbal on bar 1 beat 1 to mark the top of the song.
-  track.addNote({ midi: CRASH, time: 0, duration: 0.8, velocity: 110 / 127 })
-
-  // Tile the chosen groove pattern across all bars.
-  const pattern = PATTERNS[style]
-  for (let bar = 0; bar < barCount; bar++) {
-    const barOffset = bar * barDuration
-    for (const hit of pattern) {
-      const time = barOffset + hit.tick * secondsPerTick
-      track.addNote({ midi: hit.pitch, time, duration: 0.05, velocity: hit.velocity / 127 })
+  if (notes.length > 0) {
+    // Use the actual notes from the GP5 file directly.
+    for (const note of notes) {
+      track.addNote({
+        midi: note.pitch,
+        time: note.startTime,
+        duration: Math.max(note.duration, 0.05),
+        velocity: note.velocity / 127
+      })
+    }
+  } else {
+    // No notes provided — fall back to groove pattern generation.
+    track.addNote({ midi: CRASH, time: 0, duration: 0.8, velocity: 110 / 127 })
+    const pattern = PATTERNS[style]
+    for (let bar = 0; bar < barCount; bar++) {
+      const barOffset = bar * barDuration
+      for (const hit of pattern) {
+        const time = barOffset + hit.tick * secondsPerTick
+        track.addNote({ midi: hit.pitch, time, duration: 0.05, velocity: hit.velocity / 127 })
+      }
     }
   }
 

@@ -7,7 +7,11 @@ import { InstrumentCard } from './components/InstrumentCard'
 import { InstrumentTabs } from './components/InstrumentTabs'
 import { ExportPanel } from './components/ExportPanel'
 import { InstrumentSelectDialog } from './components/InstrumentSelectDialog'
-import { parseGuitarPro } from './utils/guitarProParser'
+import {
+  parseGuitarPro,
+  parseGuitarProMultiTrack,
+  type GuitarProParseResult
+} from './utils/guitarProParser'
 import { parseMidi } from './utils/midiParser'
 import { parseMusicXml } from './utils/musicXmlParser'
 import { parseTab, runTabParserTests } from './utils/tabParser'
@@ -16,10 +20,7 @@ import { generateDrumDiWav, type DrumStyle } from './utils/drumDiGenerator'
 import { generateBassDiWav, type BassStyle } from './utils/bassDiGenerator'
 import { generateDrumMidi } from './utils/drumMidiGenerator'
 import { generateBassMidi } from './utils/bassMidiGenerator'
-import {
-  detectInstrumentFromFilename,
-  detectInstrumentFromGuitarPro
-} from './utils/instrumentDetector'
+import { detectInstrumentFromFilename } from './utils/instrumentDetector'
 import { drumPatternToNotes } from './utils/drumPatternToNotes'
 import { extractBassNotes } from './utils/bassNoteExtractor'
 import type { AudioQuality, InstrumentPresets } from './components/AudioQualityPanel'
@@ -93,9 +94,9 @@ function App(): JSX.Element {
   const [bassStyle, setBassStyle] = useState<BassStyle>('root')
   const [audioQuality, setAudioQuality] = useState<AudioQuality>('standard')
   const [instrumentPresets, setInstrumentPresets] = useState<InstrumentPresets>({
-    guitar: 27, // Electric Guitar (clean), 0-indexed
-    bass: 33, // Electric Bass (finger), 0-indexed
-    drumKit: 0 // Standard Kit
+    guitar: 27,
+    bass: 33,
+    drumKit: 0
   })
   const [isGenerating, setIsGenerating] = useState(false)
   const [exportProgress, setExportProgress] = useState<{
@@ -121,7 +122,6 @@ function App(): JSX.Element {
       notes: result.notes,
       analysisResult: result
     }
-    // Set global BPM/time sig from the first instrument loaded.
     const noneLoaded = !guitar.loaded && !bass.loaded && !drums.loaded
     if (noneLoaded) {
       setUserBPM(result.bpm)
@@ -138,6 +138,59 @@ function App(): JSX.Element {
       setDrums(slot)
       setExportDrums(true)
     }
+    setGenerateError(null)
+    setExportFolder(null)
+  }
+
+  function loadGuitarProResult(result: GuitarProParseResult, fileName: string): void {
+    const noneLoaded = !guitar.loaded && !bass.loaded && !drums.loaded
+    if (noneLoaded) {
+      setUserBPM(result.bpm)
+      setUserTimeSig(result.timeSignature)
+    }
+
+    const shared = {
+      bpm: result.bpm,
+      timeSig: `${result.timeSignature.numerator}/${result.timeSignature.denominator}`,
+      key: result.key
+    }
+
+    if (result.guitar.length > 0) {
+      setGuitar({
+        loaded: true,
+        fileName,
+        notes: result.guitar,
+        analysisResult: { ...shared, notes: result.guitar },
+        gpTracks: result.tracks.filter((t) => t.type === 'guitar')
+      })
+      setExportGuitar(true)
+      setActiveAnalysisTab('guitar')
+    }
+
+    if (result.bass.length > 0) {
+      setBass({
+        loaded: true,
+        fileName,
+        notes: result.bass,
+        analysisResult: { ...shared, notes: result.bass },
+        gpTracks: result.tracks.filter((t) => t.type === 'bass')
+      })
+      setExportBass(true)
+      if (result.guitar.length === 0) setActiveAnalysisTab('bass')
+    }
+
+    if (result.drums.length > 0) {
+      setDrums({
+        loaded: true,
+        fileName,
+        notes: result.drums,
+        analysisResult: { ...shared, notes: result.drums },
+        gpTracks: result.tracks.filter((t) => t.type === 'drums')
+      })
+      setExportDrums(true)
+      if (result.guitar.length === 0 && result.bass.length === 0) setActiveAnalysisTab('drums')
+    }
+
     setGenerateError(null)
     setExportFolder(null)
   }
@@ -226,20 +279,47 @@ function App(): JSX.Element {
     const file = e.dataTransfer.files[0]
     if (!file) return
 
-    // Try filename heuristic first.
-    let detected = detectInstrumentFromFilename(file.name)
-
-    // For Guitar Pro files, try reading track metadata.
-    if (!detected && GP_RE.test(file.name)) {
-      const buf = await file.arrayBuffer()
-      detected = detectInstrumentFromGuitarPro(buf)
-      if (detected) {
-        const result = parseGuitarPro(buf)
-        loadSlot(detected, result, file.name)
-        return
-      }
+    // If the drop landed on an instrument card, InstrumentCard already handled it
+    // via onGuitarProDrop — don't process it again here.
+    const target = e.target as HTMLElement
+    const isInstrumentCardDrop =
+      target.closest('.instrument-dropzone') !== null || target.closest('.instrument-card') !== null
+    if (isInstrumentCardDrop) {
+      console.log('DROP handled by InstrumentCard — skipping App onAppDrop')
+      return
     }
 
+    console.log('DROP FILE:', file.name, '| GP_RE match:', GP_RE.test(file.name))
+
+    if (GP_RE.test(file.name)) {
+      const buf = await file.arrayBuffer()
+      try {
+        const multiResult = parseGuitarProMultiTrack(buf)
+        console.log('GP5 multiResult:', {
+          guitarNotes: multiResult.guitar.length,
+          bassNotes: multiResult.bass.length,
+          drumNotes: multiResult.drums.length,
+          tracks: multiResult.detectedTracks,
+          bpm: multiResult.bpm,
+          timeSignature: multiResult.timeSignature
+        })
+        const hasAny =
+          multiResult.guitar.length > 0 ||
+          multiResult.bass.length > 0 ||
+          multiResult.drums.length > 0
+        if (hasAny) {
+          loadGuitarProResult(multiResult, file.name)
+          return
+        }
+        console.warn('GP5 parsed but all tracks empty — showing dialog')
+      } catch (err) {
+        console.error('parseGuitarProMultiTrack error:', err)
+      }
+      setPendingDropFile(file)
+      return
+    }
+
+    const detected = detectInstrumentFromFilename(file.name)
     if (detected) {
       await loadFileToSlot(file, detected)
     } else {
@@ -258,7 +338,6 @@ function App(): JSX.Element {
   async function handleGenerateStandard(): Promise<void> {
     const fileEntries: Array<[string, ArrayBuffer | string]> = []
 
-    // Collect WAV generation tasks in display order so progress stages are sequential.
     type WavTask = {
       label: string
       run: (cb: ProgressCallback) => Promise<[string, ArrayBuffer]>
@@ -266,39 +345,77 @@ function App(): JSX.Element {
     const wavTasks: WavTask[] = []
 
     if (exportGuitar && guitar.loaded) {
-      const scaled = scaleNotes(guitar.notes, guitar.analysisResult!.bpm, userBPM)
-      wavTasks.push({
-        label: 'Guitar',
-        run: async (cb) => ['guitar_di.wav', await generateDiWav(scaled, cb)]
-      })
+      const gpTracks = guitar.gpTracks
+      if (gpTracks && gpTracks.length > 0) {
+        for (const track of gpTracks) {
+          const scaledTrack = scaleNotes(track.notes, guitar.analysisResult!.bpm, userBPM)
+          wavTasks.push({
+            label: track.name,
+            run: async (cb) => [`${track.safeName}_di.wav`, await generateDiWav(scaledTrack, cb)]
+          })
+        }
+      } else {
+        const scaled = scaleNotes(guitar.notes, guitar.analysisResult!.bpm, userBPM)
+        wavTasks.push({
+          label: 'Guitar',
+          run: async (cb) => ['guitar_di.wav', await generateDiWav(scaled, cb)]
+        })
+      }
     }
 
     if (exportBass && bass.loaded) {
-      const scaled = scaleNotes(bass.notes, bass.analysisResult!.bpm, userBPM)
+      const gpTracks = bass.gpTracks
       if (exportMode === 'wav') {
-        wavTasks.push({
-          label: 'Bass',
-          run: async (cb) => [
-            'bass_di.wav',
-            await generateBassDiWav(userBPM, bassStyle, scaled, cb)
-          ]
-        })
+        if (gpTracks && gpTracks.length > 0) {
+          for (const track of gpTracks) {
+            const scaledTrack = scaleNotes(track.notes, bass.analysisResult!.bpm, userBPM)
+            wavTasks.push({
+              label: track.name,
+              run: async (cb) => [`${track.safeName}_di.wav`, await generateDiWav(scaledTrack, cb)]
+            })
+          }
+        } else {
+          const scaled = scaleNotes(bass.notes, bass.analysisResult!.bpm, userBPM)
+          wavTasks.push({
+            label: 'Bass',
+            run: async (cb) => [
+              'bass_di.wav',
+              await generateBassDiWav(userBPM, bassStyle, scaled, cb)
+            ]
+          })
+        }
       } else {
+        const scaled = scaleNotes(bass.notes, bass.analysisResult!.bpm, userBPM)
         fileEntries.push(['bass_track.mid', generateBassMidi(userBPM, bassStyle, scaled)])
       }
     }
 
     if (exportDrums && drums.loaded) {
-      const scaled = scaleNotes(drums.notes, drums.analysisResult!.bpm, userBPM)
+      const gpTracks = drums.gpTracks
       if (exportMode === 'wav') {
-        wavTasks.push({
-          label: 'Drums',
-          run: async (cb) => [
-            'drum_track.wav',
-            await generateDrumDiWav(userBPM, drumStyle, scaled, cb)
-          ]
-        })
+        if (gpTracks && gpTracks.length > 0) {
+          for (const track of gpTracks) {
+            const scaledTrack = scaleNotes(track.notes, drums.analysisResult!.bpm, userBPM)
+            wavTasks.push({
+              label: track.name,
+              run: async (cb) => [
+                `${track.safeName}_drum.wav`,
+                await generateDrumDiWav(userBPM, drumStyle, scaledTrack, cb)
+              ]
+            })
+          }
+        } else {
+          const scaled = scaleNotes(drums.notes, drums.analysisResult!.bpm, userBPM)
+          wavTasks.push({
+            label: 'Drums',
+            run: async (cb) => [
+              'drum_track.wav',
+              await generateDrumDiWav(userBPM, drumStyle, scaled, cb)
+            ]
+          })
+        }
       } else {
+        const scaled = scaleNotes(drums.notes, drums.analysisResult!.bpm, userBPM)
         fileEntries.push(['drum_track.mid', generateDrumMidi(userBPM, drumStyle, scaled)])
       }
     }
@@ -320,7 +437,6 @@ function App(): JSX.Element {
     }
 
     setExportProgress({ percent: 93, message: 'Writing files...' })
-
     fileEntries.push(['session.txt', buildSessionTxt()])
 
     const result = await window.api.exportSession({
@@ -434,6 +550,29 @@ function App(): JSX.Element {
       setExportProgress(null)
     }
   }
+  async function handleGuitarProDrop(file: File): Promise<void> {
+    const buf = await file.arrayBuffer()
+    try {
+      const multiResult = parseGuitarProMultiTrack(buf)
+      console.log('GP5 multiResult:', {
+        guitarNotes: multiResult.guitar.length,
+        bassNotes: multiResult.bass.length,
+        drumNotes: multiResult.drums.length,
+        tracks: multiResult.detectedTracks,
+        bpm: multiResult.bpm,
+        timeSignature: multiResult.timeSignature
+      })
+      const hasAny =
+        multiResult.guitar.length > 0 || multiResult.bass.length > 0 || multiResult.drums.length > 0
+      if (hasAny) {
+        loadGuitarProResult(multiResult, file.name)
+        return
+      }
+      console.warn('GP5 parsed but all tracks empty')
+    } catch (err) {
+      console.error('parseGuitarProMultiTrack error:', err)
+    }
+  }
 
   function buildSessionTxt(isEnhanced = false): string {
     const now = new Date()
@@ -467,18 +606,40 @@ function App(): JSX.Element {
     lines.push('OUTPUT FILES')
     lines.push('=====================================')
     if (exportGuitar && guitar.loaded) {
-      lines.push('guitar_di.wav    — Guitar dry DI signal')
+      const gpTracks = guitar.gpTracks
+      if (gpTracks && gpTracks.length > 0) {
+        for (const track of gpTracks) {
+          lines.push(`${`${track.safeName}_di.wav`.padEnd(24)} — ${track.name} (guitar DI)`)
+        }
+      } else {
+        lines.push('guitar_di.wav    — Guitar dry DI signal')
+      }
     }
     if (exportBass && bass.loaded) {
-      const file = exportMode === 'wav' ? 'bass_di.wav' : 'bass_track.mid'
-      const desc =
-        exportMode === 'wav' ? `Bass dry DI signal (${bassStyle})` : `Bass MIDI (${bassStyle})`
-      lines.push(`${file.padEnd(16)} — ${desc}`)
+      const gpTracks = bass.gpTracks
+      if (gpTracks && gpTracks.length > 0) {
+        for (const track of gpTracks) {
+          lines.push(`${`${track.safeName}_di.wav`.padEnd(24)} — ${track.name} (bass DI)`)
+        }
+      } else {
+        const file = exportMode === 'wav' ? 'bass_di.wav' : 'bass_track.mid'
+        const desc =
+          exportMode === 'wav' ? `Bass dry DI signal (${bassStyle})` : `Bass MIDI (${bassStyle})`
+        lines.push(`${file.padEnd(16)} — ${desc}`)
+      }
     }
     if (exportDrums && drums.loaded) {
-      const file = exportMode === 'wav' ? 'drum_track.wav' : 'drum_track.mid'
-      const desc = exportMode === 'wav' ? `Drum synthesis: ${drumStyle}` : `Drum MIDI: ${drumStyle}`
-      lines.push(`${file.padEnd(16)} — ${desc}`)
+      const gpTracks = drums.gpTracks
+      if (gpTracks && gpTracks.length > 0) {
+        for (const track of gpTracks) {
+          lines.push(`${`${track.safeName}_drum.wav`.padEnd(24)} — ${track.name} (drums)`)
+        }
+      } else {
+        const file = exportMode === 'wav' ? 'drum_track.wav' : 'drum_track.mid'
+        const desc =
+          exportMode === 'wav' ? `Drum synthesis: ${drumStyle}` : `Drum MIDI: ${drumStyle}`
+        lines.push(`${file.padEnd(16)} — ${desc}`)
+      }
     }
     lines.push('')
     lines.push(`Import all files into your DAW and set the project tempo to ${userBPM} BPM.`)
@@ -493,7 +654,6 @@ function App(): JSX.Element {
     if (activeAnalysisTab === 'guitar' && guitar.loaded) return guitar
     if (activeAnalysisTab === 'bass' && bass.loaded) return bass
     if (activeAnalysisTab === 'drums' && drums.loaded) return drums
-    // Fall back to first loaded slot
     if (guitar.loaded) candidates.push(guitar)
     if (bass.loaded) candidates.push(bass)
     if (drums.loaded) candidates.push(drums)
@@ -513,21 +673,16 @@ function App(): JSX.Element {
 
   return (
     <div className="app" onDragOver={onAppDragOver} onDragLeave={onAppDragLeave} onDrop={onAppDrop}>
-      {/* ── Update notification banner (hidden when no update) ── */}
       <UpdateNotification />
 
-      {/* ── Header ─────────────────────────────────────────── */}
       <header className="app-header">
         <h1>
           🎸 Tab to <span className="accent">Backing Track</span>
         </h1>
       </header>
 
-      {/* ── Main Body ──────────────────────────────────────── */}
       <main className="app-body">
-        {/* ── Top Row: Input + Analysis ──────────────────── */}
         <div className="app-top-row">
-          {/* Input Panel — three instrument cards side by side */}
           <section className="panel panel-input">
             <h2 className="panel-title">Input</h2>
             <div className="instrument-cards">
@@ -535,31 +690,35 @@ function App(): JSX.Element {
                 instrument="guitar"
                 loaded={guitar.loaded}
                 fileName={guitar.fileName}
+                gpTracks={guitar.gpTracks}
                 onLoad={(result, fileName) => loadSlot('guitar', result, fileName)}
                 onClear={() => clearSlot('guitar')}
+                onGuitarProDrop={handleGuitarProDrop} // ← add this
               />
               <InstrumentCard
                 instrument="bass"
                 loaded={bass.loaded}
                 fileName={bass.fileName}
+                gpTracks={bass.gpTracks}
                 onLoad={(result, fileName) => loadSlot('bass', result, fileName)}
                 onClear={() => clearSlot('bass')}
+                onGuitarProDrop={handleGuitarProDrop} // ← add this
               />
               <InstrumentCard
                 instrument="drums"
                 loaded={drums.loaded}
                 fileName={drums.fileName}
+                gpTracks={drums.gpTracks}
                 onLoad={(result, fileName) => loadSlot('drums', result, fileName)}
                 onClear={() => clearSlot('drums')}
+                onGuitarProDrop={handleGuitarProDrop} // ← add this
               />
             </div>
           </section>
 
-          {/* Analysis Panel */}
           <section className="panel panel-analysis">
             <h2 className="panel-title">Analysis</h2>
 
-            {/* Tab strip — only shown when 2+ slots are loaded */}
             <InstrumentTabs
               guitar={guitar}
               bass={bass}
@@ -569,7 +728,6 @@ function App(): JSX.Element {
             />
 
             <div className="analysis-grid">
-              {/* Key — per active slot */}
               {activeSlot?.analysisResult && (
                 <div className="analysis-stat">
                   <span className="stat-label">Key</span>
@@ -577,7 +735,6 @@ function App(): JSX.Element {
                 </div>
               )}
 
-              {/* BPM — global, always editable */}
               <div className="analysis-stat">
                 <span className="stat-label">
                   BPM
@@ -619,7 +776,6 @@ function App(): JSX.Element {
                 </div>
               </div>
 
-              {/* Time Signature — global, always editable */}
               <div className="analysis-stat">
                 <span className="stat-label">
                   Time Signature
@@ -664,7 +820,6 @@ function App(): JSX.Element {
                 </div>
               </div>
 
-              {/* Notes detected — per active slot */}
               {activeSlot?.loaded && (
                 <div className="analysis-stat">
                   <span className="stat-label">Notes Detected</span>
@@ -681,7 +836,6 @@ function App(): JSX.Element {
           </section>
         </div>
 
-        {/* ── Export Panel (full width bottom) ───────────── */}
         <ExportPanel
           guitar={guitar}
           bass={bass}
@@ -711,7 +865,6 @@ function App(): JSX.Element {
         />
       </main>
 
-      {/* ── Global drag-and-drop overlay ───────────────────── */}
       {globalDragging && (
         <div className="drop-overlay">
           <div className="drop-overlay-content">
@@ -722,7 +875,6 @@ function App(): JSX.Element {
         </div>
       )}
 
-      {/* ── Instrument selection dialog ─────────────────────── */}
       {pendingDropFile && (
         <InstrumentSelectDialog
           filename={pendingDropFile.name}

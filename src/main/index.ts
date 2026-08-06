@@ -47,7 +47,7 @@ function createWindow(): void {
     height: 700,
     show: false,
     autoHideMenuBar: true,
-    ...(process.platform === 'linux' ? { icon } : {}),
+    icon,
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       sandbox: false
@@ -67,6 +67,25 @@ function createWindow(): void {
   })
 
   const menu = Menu.buildFromTemplate([
+    {
+      label: 'Developer',
+      submenu: [
+        {
+          label: 'Toggle DevTools',
+          accelerator: 'F12',
+          click: () => {
+            mainWindow?.webContents.toggleDevTools()
+          }
+        },
+        {
+          label: 'Reload',
+          accelerator: 'CmdOrCtrl+R',
+          click: () => {
+            mainWindow?.webContents.reload()
+          }
+        }
+      ]
+    },
     {
       label: 'Help',
       submenu: [

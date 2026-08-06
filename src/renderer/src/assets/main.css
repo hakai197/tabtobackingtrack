@@ -698,10 +698,26 @@
 
 .instrument-card-loaded {
   display: flex;
-  align-items: center;
-  gap: var(--space-xs);
+  flex-direction: column;
+  gap: 4px;
   flex: 1;
   min-width: 0;
+}
+
+.instrument-loaded-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  min-width: 0;
+}
+
+.instrument-loaded-tracks {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  padding-left: 1.4em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .instrument-loaded-check {

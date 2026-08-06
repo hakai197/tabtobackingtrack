@@ -4,7 +4,7 @@ import { parseGuitarPro } from '../utils/guitarProParser'
 import { parseMidi } from '../utils/midiParser'
 import { parseMusicXml } from '../utils/musicXmlParser'
 import { parseTab } from '../utils/tabParser'
-import type { AnalysisResult, InstrumentKey } from '../types'
+import type { AnalysisResult, InstrumentKey, GpTrack } from '../types'
 
 const GP_RE = /\.(gp|gp3|gp4|gp5|gpx|ptb)$/i
 const MIDI_RE = /\.midi?$/i
@@ -20,16 +20,20 @@ type Props = {
   instrument: InstrumentKey
   loaded: boolean
   fileName: string | null
+  gpTracks?: GpTrack[]
   onLoad: (result: AnalysisResult, fileName: string) => void
   onClear: () => void
+  onGuitarProDrop?: (file: File) => void // ← new: lets parent handle GP5 multi-track
 }
 
 export function InstrumentCard({
   instrument,
   loaded,
   fileName,
+  gpTracks,
   onLoad,
-  onClear
+  onClear,
+  onGuitarProDrop
 }: Props): JSX.Element {
   const [isDragging, setIsDragging] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -41,9 +45,17 @@ export function InstrumentCard({
   async function loadFile(file: File): Promise<void> {
     setError(null)
     setWarnings([])
+
+    // GP5 files — always route to parent's multi-track handler if available
+    if (GP_RE.test(file.name) && onGuitarProDrop) {
+      onGuitarProDrop(file)
+      return
+    }
+
     try {
       let result: AnalysisResult
       if (GP_RE.test(file.name)) {
+        // Fallback if no multi-track handler provided
         result = parseGuitarPro(await file.arrayBuffer())
       } else if (MIDI_RE.test(file.name)) {
         result = parseMidi(new Midi(await file.arrayBuffer()))
@@ -120,13 +132,23 @@ export function InstrumentCard({
 
       {loaded ? (
         <div className="instrument-card-loaded">
-          <span className="instrument-loaded-check">✓</span>
-          <span className="instrument-loaded-filename" title={fileName ?? ''}>
-            {fileName}
-          </span>
-          <button type="button" className="btn-clear" onClick={onClear}>
-            Clear
-          </button>
+          <div className="instrument-loaded-row">
+            <span className="instrument-loaded-check">✓</span>
+            <span className="instrument-loaded-filename" title={fileName ?? ''}>
+              {fileName}
+            </span>
+            <button type="button" className="btn-clear" onClick={onClear}>
+              Clear
+            </button>
+          </div>
+          {gpTracks && gpTracks.length > 0 && (
+            <span
+              className="instrument-loaded-tracks"
+              title={gpTracks.map((t) => t.name).join(', ')}
+            >
+              {gpTracks.map((t) => t.name).join(', ')}
+            </span>
+          )}
         </div>
       ) : (
         <>

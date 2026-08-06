@@ -261,21 +261,34 @@ export async function generateDrumDiWav(
 
   // ── Build the timeline ─────────────────────────────────────────────────────
 
+  if (import.meta.env.DEV) {
+    console.log('generateDrumDiWav:', {
+      notesProvided: notes.length,
+      usingGP5Notes: notes.length > 0,
+      drumStyle: style
+    })
+  }
+
   onProgress?.(10, 'Scheduling drum hits...')
 
-  // Crash cymbal on bar 1 beat 1 to mark the top of the song.
-  renderHit(CRASH, 0, 110)
-
-  // Tile the chosen groove pattern across all bars.
-  const pattern = PATTERNS[style]
-  for (let bar = 0; bar < barCount; bar++) {
-    const barOffset = bar * barDuration
-    for (const hit of pattern) {
-      renderHit(hit.pitch, barOffset + hit.tick * secondsPerTick, hit.velocity)
+  if (notes.length > 0) {
+    // Use the actual notes from the GP5 file directly.
+    for (const note of notes) {
+      renderHit(note.pitch, note.startTime, note.velocity)
     }
-    if (bar % 8 === 0) {
-      const pct = 10 + Math.floor((bar / barCount) * 75)
-      onProgress?.(pct, `Rendering bar ${bar + 1} of ${barCount}...`)
+  } else {
+    // No notes provided — fall back to groove pattern generation.
+    renderHit(CRASH, 0, 110)
+    const pattern = PATTERNS[style]
+    for (let bar = 0; bar < barCount; bar++) {
+      const barOffset = bar * barDuration
+      for (const hit of pattern) {
+        renderHit(hit.pitch, barOffset + hit.tick * secondsPerTick, hit.velocity)
+      }
+      if (bar % 8 === 0) {
+        const pct = 10 + Math.floor((bar / barCount) * 75)
+        onProgress?.(pct, `Rendering bar ${bar + 1} of ${barCount}...`)
+      }
     }
   }
 

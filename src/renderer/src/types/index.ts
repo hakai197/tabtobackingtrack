@@ -27,11 +27,20 @@ export type AnalysisResult = {
 
 export type InstrumentKey = 'guitar' | 'bass' | 'drums'
 
+// A single track extracted from a Guitar Pro file, with its original name preserved.
+export type GpTrack = {
+  name: string
+  safeName: string
+  notes: Note[]
+  type: 'guitar' | 'bass' | 'drums'
+}
+
 export type InstrumentSlot = {
   loaded: boolean
   fileName: string | null
   notes: Note[]
   analysisResult: AnalysisResult | null
+  gpTracks?: GpTrack[]
 }
 
 export type ExportMode = 'wav' | 'midi'

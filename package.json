@@ -1,6 +1,6 @@
 {
   "name": "tab-to-backing-track",
-  "version": "1.4.0",
+  "version": "1.4.2",
   "description": "An Electron application with React and TypeScript",
   "main": "./out/main/index.js",
   "author": "example.com",
