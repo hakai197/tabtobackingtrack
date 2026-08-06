@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, type JSX } from 'react'
 import { UpdateNotification } from './components/UpdateNotification'
+import { ConverterPanel } from './components/ConverterPanel'
 import { Midi } from '@tonejs/midi'
 import './assets/base.css'
 import './assets/main.css'
@@ -68,11 +69,16 @@ function clampBPM(v: number): number {
   return Math.max(20, Math.min(300, Math.round(v)))
 }
 
+type AppMode = 'backing-track' | 'converter'
+
 function App(): JSX.Element {
   // ── Dev-mode self-tests ─────────────────────────────────────
   useEffect(() => {
     if (import.meta.env.DEV) runTabParserTests()
   }, [])
+
+  // ── App mode ────────────────────────────────────────────────
+  const [appMode, setAppMode] = useState<AppMode>('backing-track')
 
   // ── Instrument slots ────────────────────────────────────────
   const [guitar, setGuitar] = useState<InstrumentSlot>(emptySlot())
@@ -679,193 +685,214 @@ function App(): JSX.Element {
         <h1>
           🎸 Tab to <span className="accent">Backing Track</span>
         </h1>
+        <div className="mode-toggle">
+          <button
+            type="button"
+            className={`btn-mode${appMode === 'backing-track' ? ' active' : ''}`}
+            onClick={() => setAppMode('backing-track')}
+          >
+            🎸 Backing Track
+          </button>
+          <button
+            type="button"
+            className={`btn-mode${appMode === 'converter' ? ' active' : ''}`}
+            onClick={() => setAppMode('converter')}
+          >
+            🔄 File Converter
+          </button>
+        </div>
       </header>
 
       <main className="app-body">
-        <div className="app-top-row">
-          <section className="panel panel-input">
-            <h2 className="panel-title">Input</h2>
-            <div className="instrument-cards">
-              <InstrumentCard
-                instrument="guitar"
-                loaded={guitar.loaded}
-                fileName={guitar.fileName}
-                gpTracks={guitar.gpTracks}
-                onLoad={(result, fileName) => loadSlot('guitar', result, fileName)}
-                onClear={() => clearSlot('guitar')}
-                onGuitarProDrop={handleGuitarProDrop} // ← add this
-              />
-              <InstrumentCard
-                instrument="bass"
-                loaded={bass.loaded}
-                fileName={bass.fileName}
-                gpTracks={bass.gpTracks}
-                onLoad={(result, fileName) => loadSlot('bass', result, fileName)}
-                onClear={() => clearSlot('bass')}
-                onGuitarProDrop={handleGuitarProDrop} // ← add this
-              />
-              <InstrumentCard
-                instrument="drums"
-                loaded={drums.loaded}
-                fileName={drums.fileName}
-                gpTracks={drums.gpTracks}
-                onLoad={(result, fileName) => loadSlot('drums', result, fileName)}
-                onClear={() => clearSlot('drums')}
-                onGuitarProDrop={handleGuitarProDrop} // ← add this
-              />
-            </div>
-          </section>
+        {appMode === 'converter' && <ConverterPanel />}
+        {appMode === 'backing-track' && (
+          <div className="app-top-row">
+            <section className="panel panel-input">
+              <h2 className="panel-title">Input</h2>
+              <div className="instrument-cards">
+                <InstrumentCard
+                  instrument="guitar"
+                  loaded={guitar.loaded}
+                  fileName={guitar.fileName}
+                  gpTracks={guitar.gpTracks}
+                  onLoad={(result, fileName) => loadSlot('guitar', result, fileName)}
+                  onClear={() => clearSlot('guitar')}
+                  onGuitarProDrop={handleGuitarProDrop} // ← add this
+                />
+                <InstrumentCard
+                  instrument="bass"
+                  loaded={bass.loaded}
+                  fileName={bass.fileName}
+                  gpTracks={bass.gpTracks}
+                  onLoad={(result, fileName) => loadSlot('bass', result, fileName)}
+                  onClear={() => clearSlot('bass')}
+                  onGuitarProDrop={handleGuitarProDrop} // ← add this
+                />
+                <InstrumentCard
+                  instrument="drums"
+                  loaded={drums.loaded}
+                  fileName={drums.fileName}
+                  gpTracks={drums.gpTracks}
+                  onLoad={(result, fileName) => loadSlot('drums', result, fileName)}
+                  onClear={() => clearSlot('drums')}
+                  onGuitarProDrop={handleGuitarProDrop} // ← add this
+                />
+              </div>
+            </section>
 
-          <section className="panel panel-analysis">
-            <h2 className="panel-title">Analysis</h2>
+            <section className="panel panel-analysis">
+              <h2 className="panel-title">Analysis</h2>
 
-            <InstrumentTabs
-              guitar={guitar}
-              bass={bass}
-              drums={drums}
-              activeTab={activeAnalysisTab}
-              onTabChange={setActiveAnalysisTab}
-            />
+              <InstrumentTabs
+                guitar={guitar}
+                bass={bass}
+                drums={drums}
+                activeTab={activeAnalysisTab}
+                onTabChange={setActiveAnalysisTab}
+              />
 
-            <div className="analysis-grid">
-              {activeSlot?.analysisResult && (
+              <div className="analysis-grid">
+                {activeSlot?.analysisResult && (
+                  <div className="analysis-stat">
+                    <span className="stat-label">Key</span>
+                    <span className="stat-value">{activeSlot.analysisResult.key}</span>
+                  </div>
+                )}
+
                 <div className="analysis-stat">
-                  <span className="stat-label">Key</span>
-                  <span className="stat-value">{activeSlot.analysisResult.key}</span>
+                  <span className="stat-label">
+                    BPM
+                    {bpmEdited && <span className="badge-edited">edited</span>}
+                  </span>
+                  <div className="bpm-control">
+                    <button
+                      type="button"
+                      className="btn-bpm-step"
+                      onMouseDown={() => onBpmDown(-1)}
+                      onMouseUp={onBpmUp}
+                      onMouseLeave={onBpmUp}
+                      aria-label="Decrease BPM"
+                    >
+                      −
+                    </button>
+                    <input
+                      type="number"
+                      className="bpm-input"
+                      value={userBPM}
+                      min={20}
+                      max={300}
+                      onChange={(e) => {
+                        const v = parseInt(e.target.value, 10)
+                        if (!isNaN(v)) setUserBPM(clampBPM(v))
+                      }}
+                      aria-label="BPM"
+                    />
+                    <button
+                      type="button"
+                      className="btn-bpm-step"
+                      onMouseDown={() => onBpmDown(1)}
+                      onMouseUp={onBpmUp}
+                      onMouseLeave={onBpmUp}
+                      aria-label="Increase BPM"
+                    >
+                      +
+                    </button>
+                  </div>
                 </div>
-              )}
 
-              <div className="analysis-stat">
-                <span className="stat-label">
-                  BPM
-                  {bpmEdited && <span className="badge-edited">edited</span>}
-                </span>
-                <div className="bpm-control">
-                  <button
-                    type="button"
-                    className="btn-bpm-step"
-                    onMouseDown={() => onBpmDown(-1)}
-                    onMouseUp={onBpmUp}
-                    onMouseLeave={onBpmUp}
-                    aria-label="Decrease BPM"
-                  >
-                    −
-                  </button>
-                  <input
-                    type="number"
-                    className="bpm-input"
-                    value={userBPM}
-                    min={20}
-                    max={300}
-                    onChange={(e) => {
-                      const v = parseInt(e.target.value, 10)
-                      if (!isNaN(v)) setUserBPM(clampBPM(v))
-                    }}
-                    aria-label="BPM"
-                  />
-                  <button
-                    type="button"
-                    className="btn-bpm-step"
-                    onMouseDown={() => onBpmDown(1)}
-                    onMouseUp={onBpmUp}
-                    onMouseLeave={onBpmUp}
-                    aria-label="Increase BPM"
-                  >
-                    +
-                  </button>
+                <div className="analysis-stat">
+                  <span className="stat-label">
+                    Time Signature
+                    {timeSigEdited && <span className="badge-edited">edited</span>}
+                  </span>
+                  <div className="timesig-control">
+                    <select
+                      className="timesig-select"
+                      value={userTimeSig.numerator}
+                      onChange={(e) =>
+                        setUserTimeSig((prev) => ({
+                          ...prev,
+                          numerator: parseInt(e.target.value, 10)
+                        }))
+                      }
+                      aria-label="Time signature numerator"
+                    >
+                      {TS_NUMERATORS.map((n) => (
+                        <option key={n} value={n}>
+                          {n}
+                        </option>
+                      ))}
+                    </select>
+                    <span className="timesig-sep">/</span>
+                    <select
+                      className="timesig-select"
+                      value={userTimeSig.denominator}
+                      onChange={(e) =>
+                        setUserTimeSig((prev) => ({
+                          ...prev,
+                          denominator: parseInt(e.target.value, 10)
+                        }))
+                      }
+                      aria-label="Time signature denominator"
+                    >
+                      {TS_DENOMINATORS.map((d) => (
+                        <option key={d} value={d}>
+                          {d}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
+
+                {activeSlot?.loaded && (
+                  <div className="analysis-stat">
+                    <span className="stat-label">Notes Detected</span>
+                    <span className="stat-value">{activeSlot.notes.length.toLocaleString()}</span>
+                  </div>
+                )}
               </div>
 
-              <div className="analysis-stat">
-                <span className="stat-label">
-                  Time Signature
-                  {timeSigEdited && <span className="badge-edited">edited</span>}
-                </span>
-                <div className="timesig-control">
-                  <select
-                    className="timesig-select"
-                    value={userTimeSig.numerator}
-                    onChange={(e) =>
-                      setUserTimeSig((prev) => ({
-                        ...prev,
-                        numerator: parseInt(e.target.value, 10)
-                      }))
-                    }
-                    aria-label="Time signature numerator"
-                  >
-                    {TS_NUMERATORS.map((n) => (
-                      <option key={n} value={n}>
-                        {n}
-                      </option>
-                    ))}
-                  </select>
-                  <span className="timesig-sep">/</span>
-                  <select
-                    className="timesig-select"
-                    value={userTimeSig.denominator}
-                    onChange={(e) =>
-                      setUserTimeSig((prev) => ({
-                        ...prev,
-                        denominator: parseInt(e.target.value, 10)
-                      }))
-                    }
-                    aria-label="Time signature denominator"
-                  >
-                    {TS_DENOMINATORS.map((d) => (
-                      <option key={d} value={d}>
-                        {d}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              {activeSlot?.loaded && (
-                <div className="analysis-stat">
-                  <span className="stat-label">Notes Detected</span>
-                  <span className="stat-value">{activeSlot.notes.length.toLocaleString()}</span>
-                </div>
+              {!activeSlot && (
+                <p className="analysis-empty">
+                  Load a file into any instrument slot to see analysis.
+                </p>
               )}
-            </div>
+            </section>
+          </div>
+        )}
 
-            {!activeSlot && (
-              <p className="analysis-empty">
-                Load a file into any instrument slot to see analysis.
-              </p>
-            )}
-          </section>
-        </div>
-
-        <ExportPanel
-          guitar={guitar}
-          bass={bass}
-          drums={drums}
-          exportGuitar={exportGuitar}
-          exportBass={exportBass}
-          exportDrums={exportDrums}
-          onExportGuitarChange={setExportGuitar}
-          onExportBassChange={setExportBass}
-          onExportDrumsChange={setExportDrums}
-          exportMode={exportMode}
-          onExportModeChange={setExportMode}
-          drumStyle={drumStyle}
-          onDrumStyleChange={setDrumStyle}
-          bassStyle={bassStyle}
-          onBassStyleChange={setBassStyle}
-          audioQuality={audioQuality}
-          onAudioQualityChange={setAudioQuality}
-          onCheckFluidSynth={() => window.api.checkFluidSynth()}
-          instrumentPresets={instrumentPresets}
-          onInstrumentPresetsChange={setInstrumentPresets}
-          onExport={handleGenerate}
-          isGenerating={isGenerating}
-          exportProgress={exportProgress}
-          generateError={generateError}
-          exportFolder={exportFolder}
-        />
+        {appMode === 'backing-track' && (
+          <ExportPanel
+            guitar={guitar}
+            bass={bass}
+            drums={drums}
+            exportGuitar={exportGuitar}
+            exportBass={exportBass}
+            exportDrums={exportDrums}
+            onExportGuitarChange={setExportGuitar}
+            onExportBassChange={setExportBass}
+            onExportDrumsChange={setExportDrums}
+            exportMode={exportMode}
+            onExportModeChange={setExportMode}
+            drumStyle={drumStyle}
+            onDrumStyleChange={setDrumStyle}
+            bassStyle={bassStyle}
+            onBassStyleChange={setBassStyle}
+            audioQuality={audioQuality}
+            onAudioQualityChange={setAudioQuality}
+            onCheckFluidSynth={() => window.api.checkFluidSynth()}
+            instrumentPresets={instrumentPresets}
+            onInstrumentPresetsChange={setInstrumentPresets}
+            onExport={handleGenerate}
+            isGenerating={isGenerating}
+            exportProgress={exportProgress}
+            generateError={generateError}
+            exportFolder={exportFolder}
+          />
+        )}
       </main>
 
-      {globalDragging && (
+      {globalDragging && appMode === 'backing-track' && (
         <div className="drop-overlay">
           <div className="drop-overlay-content">
             <span className="drop-overlay-icon">⬇</span>

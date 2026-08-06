@@ -45,6 +45,14 @@ export type InstrumentSlot = {
 
 export type ExportMode = 'wav' | 'midi'
 
+export type ConvertedTrack = {
+  name: string
+  safeName: string
+  type: 'guitar' | 'bass' | 'drums' | 'unknown'
+  notes: Note[]
+  program: number
+}
+
 // ── Tab parser types ──────────────────────────────────────────────────────────
 
 export type TabFormat =

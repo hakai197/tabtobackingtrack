@@ -134,14 +134,15 @@ Guitar Pro files are the best input format — they contain all instrument track
 
 **Free sources:**
 
-| Site | URL | Notes |
-|---|---|---|
-| GProTab | gprotab.net | Free GP file sharing, no account needed |
-| GTPTabs | gtptabs.com | Free Guitar Pro archive |
-| Ultimate Guitar | ultimate-guitar.com | Requires Pro subscription to download |
-| Guitar Pro Blog | guitar-pro.com/blog | Free drum pattern packs |
+| Site            | URL                 | Notes                                   |
+| --------------- | ------------------- | --------------------------------------- |
+| GProTab         | gprotab.net         | Free GP file sharing, no account needed |
+| GTPTabs         | gtptabs.com         | Free Guitar Pro archive                 |
+| Ultimate Guitar | ultimate-guitar.com | Requires Pro subscription to download   |
+| Guitar Pro Blog | guitar-pro.com/blog | Free drum pattern packs                 |
 
 **How to download from GProTab.net:**
+
 1. Go to gprotab.net
 2. Search for the song or artist you want
 3. Click the tab title to open it
@@ -149,6 +150,7 @@ Guitar Pro files are the best input format — they contain all instrument track
 5. Save the .gp5 or .gpx file to your computer
 
 **How to load into the app:**
+
 - Drag and drop the file anywhere onto the app window
 - The app automatically detects all tracks in the file
 - Guitar, bass, and drum tracks are routed to their correct instrument slots automatically
@@ -164,13 +166,14 @@ MIDI files work well for single instrument tracks.
 
 **Free sources:**
 
-| Site | URL | Notes |
-|---|---|---|
-| LANDR | blog.landr.com/free-midi-packs | Free drum and bass MIDI packs |
-| FreeMidi | freemidi.org | Large MIDI archive |
-| Bitmidi | bitmidi.com | Free MIDI library |
+| Site     | URL                            | Notes                         |
+| -------- | ------------------------------ | ----------------------------- |
+| LANDR    | blog.landr.com/free-midi-packs | Free drum and bass MIDI packs |
+| FreeMidi | freemidi.org                   | Large MIDI archive            |
+| Bitmidi  | bitmidi.com                    | Free MIDI library             |
 
 **How to load into the app:**
+
 - Drag the .mid file onto the specific instrument slot you want to load it into (Guitar, Bass or Drums)
 - Or drag onto the app window — the app will ask which instrument slot to use if it cannot detect the instrument automatically
 
@@ -182,13 +185,14 @@ MusicXML is exported from notation software like Sibelius, Finale, and MuseScore
 
 **Free sources:**
 
-| Site | URL | Notes |
-|---|---|---|
-| GProTab | gprotab.net | Export any GP tab as MusicXML |
-| MuseScore Desktop | musescore.org | Free desktop app, export any score |
-| OpenScore | openscore.co.uk | Free licensed classical scores |
+| Site              | URL             | Notes                              |
+| ----------------- | --------------- | ---------------------------------- |
+| GProTab           | gprotab.net     | Export any GP tab as MusicXML      |
+| MuseScore Desktop | musescore.org   | Free desktop app, export any score |
+| OpenScore         | openscore.co.uk | Free licensed classical scores     |
 
 **How to export MusicXML from GProTab.net:**
+
 1. Open any tab on gprotab.net
 2. Click the Export button
 3. Select MusicXML as the format
@@ -196,6 +200,7 @@ MusicXML is exported from notation software like Sibelius, Finale, and MuseScore
 5. Drag it into the app
 
 **How to load into the app:**
+
 - Drag the .xml or .musicxml file onto an instrument slot
 - Or drag onto the app window and select the instrument when prompted
 
@@ -206,11 +211,13 @@ MusicXML is exported from notation software like Sibelius, Finale, and MuseScore
 ASCII tabs are the most common format found on the internet — the kind you copy and paste from tab sites.
 
 **Sources:**
+
 - Ultimate Guitar — ultimate-guitar.com (free tabs, no subscription needed)
 - BigBassTabs — bigbasstabs.com (50,000+ bass tabs)
 - TabClub — tabclub.net (120,000+ tabs)
 
 **Supported text tab formats:**
+
 - Standard ASCII guitar tab (e|B|G|D|A|E| format)
 - Bass tab (G|D|A|E| format)
 - Drum tab (K|S|HH| format)
@@ -221,6 +228,7 @@ ASCII tabs are the most common format found on the internet — the kind you cop
 **Format examples — copy these patterns exactly:**
 
 Guitar tab — 6 string lines, lowercase `e` = high string, uppercase `E` = low string:
+
 ```
 e|--0---3---0---2--|
 B|--1---3---1---3--|
@@ -231,6 +239,7 @@ E|--0---3---0---2--|
 ```
 
 Bass tab — 4 string lines, no lowercase `e`:
+
 ```
 G|--5---5---3---3--|
 D|--5---5---3---3--|
@@ -241,6 +250,7 @@ E|--0---0---0---0--|
 Five-string bass: add a `B` line at the bottom for the low B string.
 
 Drum tab — each line starts with a drum label followed by `|` and hit characters (`x` = normal hit, `o` = accent, `-` = rest):
+
 ```
 K |x---x---x---x---|
 S |----x-------x---|
@@ -250,24 +260,28 @@ HH|x-x-x-x-x-x-x-x|
 Supported drum labels: `K` or `BD` (kick), `S` or `SD` (snare), `HH` (hi-hat closed), `OH` (hi-hat open), `CC` or `Crash` (crash), `RC` or `Ride` (ride), `T1`/`T2`/`T3` (toms).
 
 ChordPro — chord names in `[brackets]` inline with lyrics:
+
 ```
 [Am]I walked the [G]line
 [C]all the [F]way home
 ```
 
 Chord-only — chord names separated by spaces, dashes, or pipes. Every line must contain only chord names:
+
 ```
 Am - G - C - F
 Dm - Am - E - Am
 ```
 
 **What the parser needs to detect your format:**
+
 - Guitar/bass tab: at least 2 string label lines (letter + `|` or `-` followed by fret numbers). Six unique labels including lowercase `e` → guitar; four or five labels without lowercase `e` → bass.
 - Drum tab: at least 2 lines that start with a recognized drum label followed by `|` or `:`.
 - ChordPro: at least one `[Chord]` marker anywhere in the text.
 - Chord-only: every non-empty line contains only chord names and separators — no fret numbers, no lyrics.
 
 **How to load into the app:**
+
 1. Copy the tab text from any website
 2. Click the instrument slot you want to load
 3. Paste the tab text into the text area
@@ -311,6 +325,46 @@ Make sure you copied the full tab including the string labels at the start of ea
 
 **Drum tab not loading into Drums slot:**
 When pasting a drum tab make sure you are pasting into the Drums instrument card specifically.
+
+---
+
+## File Converter
+
+Tab to Backing Track includes a built-in Guitar Pro file converter. Switch to converter mode using the toggle in the app header.
+
+**Supported conversions:**
+
+- Guitar Pro → MIDI (.mid) — one file per track, named with the original track names from the GP5 file
+- Guitar Pro → ASCII Tab (.txt) — human-readable tab notation reconstructed from the GP5 data, one file per track
+- Guitar Pro → MusicXML (.xml) — coming soon
+
+**How to use:**
+
+1. Click **File Converter** in the header toggle
+2. Drop a Guitar Pro file onto the converter drop zone, or click to browse
+3. The app detects all tracks and shows BPM and time signature
+4. Check the formats you want to export
+5. Click **Convert and Export**
+6. Choose an export folder — all files are written there
+
+**Output files (Enter Sandman example):**
+
+| File             | Contents                                   |
+| ---------------- | ------------------------------------------ |
+| `James.mid`      | James rhythm guitar track as standard MIDI |
+| `Kirk.mid`       | Kirk lead guitar track as standard MIDI    |
+| `Kliff.mid`      | Bass track as standard MIDI                |
+| `Lars_drums.mid` | Drum track on GM channel 10                |
+| `James.txt`      | Rhythm guitar in ASCII tab notation        |
+| `Kirk.txt`       | Lead guitar in ASCII tab notation          |
+| `Kliff.txt`      | Bass in ASCII tab notation                 |
+| `Lars.txt`       | Drum tab with BD/SN/HH/etc. labels         |
+
+**Use cases:**
+
+- Convert GP5 to MIDI to use in any DAW or notation software without Guitar Pro installed
+- Convert GP5 to ASCII tab to share with musicians who don't have Guitar Pro
+- Archive your GP5 collection in open, portable formats
 
 ---
 
