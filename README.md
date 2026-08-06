@@ -6,6 +6,7 @@
 [![Platform: Windows](https://img.shields.io/badge/Platform-Windows-blue.svg)](#installation)
 [![Built With](https://img.shields.io/badge/Built%20With-Electron%20%2B%20React%20%2B%20TypeScript-informational)](#building-from-source)
 [![Releases](https://img.shields.io/github/v/release/hakai197/tabtobackingtrack)](https://github.com/hakai197/tabtobackingtrack/releases)
+![Build](https://github.com/hakai197/tabtobackingtrack/actions/workflows/build.yml/badge.svg)
 
 ---
 

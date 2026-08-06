@@ -1,6 +1,6 @@
 {
   "name": "tab-to-backing-track",
-  "version": "1.3.2",
+  "version": "1.4.0",
   "description": "An Electron application with React and TypeScript",
   "main": "./out/main/index.js",
   "author": "example.com",
@@ -16,7 +16,7 @@
     "build": "npm run typecheck && electron-vite build",
     "postinstall": "electron-builder install-app-deps",
     "build:unpack": "npm run build && electron-builder --dir",
-    "build:win": "npm run build && electron-builder --win",
+    "build:win": "npm run build && electron-builder --win --publish never",
     "build:mac": "electron-vite build && electron-builder --mac",
     "build:linux": "electron-vite build && electron-builder --linux",
     "build:portable": "npm run build:unpack && powershell Compress-Archive -Force -Path dist/win-unpacked/* -DestinationPath dist/TabToBackingTrack-portable.zip"
