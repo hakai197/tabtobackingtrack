@@ -1,21 +1,19 @@
 import type { Note } from '../types'
+import type { ScheduledNote } from '../workers/audioRenderer.worker'
+
+export type ProgressCallback = (percent: number, message: string) => void
 
 const SAMPLE_RATE = 44100
-const ATTACK_SEC = 0.005 // 5ms ramp-up prevents click at note onset
-const RELEASE_SEC = 0.02 // 20ms ramp-down prevents click at note end
-const NOTE_GAIN = 0.3 // per-oscillator amplitude; headroom for chords (3 notes = 0.9)
+const ATTACK_SEC = 0.005
+const RELEASE_SEC = 0.02
+const NOTE_GAIN = 0.3
+const MIN_DURATION = ATTACK_SEC + RELEASE_SEC
+const CHUNK_SIZE = 500
+const GAIN_POOL_SIZE = 32
 
-// Standard equal-temperament: A4 (MIDI 69) = 440 Hz
-function midiToHz(pitch: number): number {
-  return 440 * Math.pow(2, (pitch - 69) / 12)
-}
-
-// Encodes an AudioBuffer to a 16-bit PCM WAV ArrayBuffer.
-// WAV structure: RIFF header (12 B) + fmt chunk (24 B) + data chunk (8 B + samples).
-function encodeWav(audioBuffer: AudioBuffer): ArrayBuffer {
-  const numChannels = audioBuffer.numberOfChannels
-  const numSamples = audioBuffer.length
-  const dataByteLen = numSamples * numChannels * 2 // 2 bytes per 16-bit sample
+function encodeWavFromFloat32(data: Float32Array): ArrayBuffer {
+  const numSamples = data.length
+  const dataByteLen = numSamples * 2
 
   const buf = new ArrayBuffer(44 + dataByteLen)
   const v = new DataView(buf)
@@ -24,45 +22,130 @@ function encodeWav(audioBuffer: AudioBuffer): ArrayBuffer {
     for (let i = 0; i < s.length; i++) v.setUint8(offset + i, s.charCodeAt(i))
   }
 
-  // RIFF chunk
   str(0, 'RIFF')
   v.setUint32(4, 36 + dataByteLen, true)
   str(8, 'WAVE')
-
-  // fmt sub-chunk (PCM = format 1)
   str(12, 'fmt ')
-  v.setUint32(16, 16, true) // sub-chunk size
+  v.setUint32(16, 16, true)
   v.setUint16(20, 1, true) // PCM
-  v.setUint16(22, numChannels, true)
+  v.setUint16(22, 1, true) // mono
   v.setUint32(24, SAMPLE_RATE, true)
-  v.setUint32(28, SAMPLE_RATE * numChannels * 2, true) // byte rate
-  v.setUint16(32, numChannels * 2, true) // block align
-  v.setUint16(34, 16, true) // bits per sample
-
-  // data sub-chunk
+  v.setUint32(28, SAMPLE_RATE * 2, true)
+  v.setUint16(32, 2, true)
+  v.setUint16(34, 16, true)
   str(36, 'data')
   v.setUint32(40, dataByteLen, true)
 
-  // Interleave channels as signed 16-bit little-endian samples
   let offset = 44
   for (let i = 0; i < numSamples; i++) {
-    for (let c = 0; c < numChannels; c++) {
-      const s = Math.max(-1, Math.min(1, audioBuffer.getChannelData(c)[i]))
-      v.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7fff, true)
-      offset += 2
-    }
+    const s = Math.max(-1, Math.min(1, data[i]))
+    v.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7fff, true)
+    offset += 2
   }
 
   return buf
 }
 
-// Renders all notes as a mono sawtooth-wave DI track and returns a WAV ArrayBuffer.
-// Each note gets an attack/release envelope to prevent clicks at boundaries.
-export async function generateDiWav(notes: Note[]): Promise<ArrayBuffer> {
+// Offloads pitch-to-frequency and timing math to a dedicated Web Worker.
+function computeScheduleAsync(notes: Note[], chunkOffset: number): Promise<ScheduledNote[]> {
+  return new Promise((resolve, reject) => {
+    const worker = new Worker(new URL('../workers/audioRenderer.worker.ts', import.meta.url), {
+      type: 'module'
+    })
+    const onMsg = (e: MessageEvent<ScheduledNote[]>): void => {
+      resolve(e.data)
+      worker.terminate()
+    }
+    const onErr = (e: ErrorEvent): void => {
+      reject(new Error(e.message))
+      worker.terminate()
+    }
+    worker.addEventListener('message', onMsg)
+    worker.addEventListener('error', onErr)
+    worker.postMessage({
+      notes: notes.map((n) => ({
+        pitch: n.pitch,
+        startTime: n.startTime,
+        duration: n.duration,
+        velocity: n.velocity
+      })),
+      chunkOffset,
+      attackSec: ATTACK_SEC,
+      releaseSec: RELEASE_SEC,
+      noteGain: NOTE_GAIN
+    })
+  })
+}
+
+// Renders one chunk of notes into the global output Float32Array.
+// Each chunk gets its own OfflineAudioContext covering only the chunk's time range,
+// which keeps per-context node counts at ≤ CHUNK_SIZE and memory pressure low.
+// A pool of GAIN_POOL_SIZE GainNodes is shared across notes in the chunk via
+// an earliest-free greedy scheduler — guitar has at most 6 simultaneous notes,
+// so with 32 pool slots there is never forced gain reuse on overlapping notes.
+async function renderChunk(notes: Note[], globalOutput: Float32Array): Promise<void> {
+  let chunkOffset = Infinity
+  let chunkEndTime = 0
+  for (const n of notes) {
+    if (n.startTime < chunkOffset) chunkOffset = n.startTime
+    const end = n.startTime + Math.max(n.duration, MIN_DURATION)
+    if (end > chunkEndTime) chunkEndTime = end
+  }
+
+  const chunkDuration = chunkEndTime - chunkOffset + 0.1
+  const ctx = new OfflineAudioContext(1, Math.ceil(chunkDuration * SAMPLE_RATE), SAMPLE_RATE)
+
+  const poolSize = Math.min(GAIN_POOL_SIZE, notes.length)
+  const gainPool: GainNode[] = []
+  const gainFreeAt: number[] = []
+  for (let i = 0; i < poolSize; i++) {
+    const g = ctx.createGain()
+    g.gain.setValueAtTime(0, 0)
+    g.connect(ctx.destination)
+    gainPool.push(g)
+    gainFreeAt.push(0)
+  }
+
+  const schedule = await computeScheduleAsync(notes, chunkOffset)
+
+  for (const ev of schedule) {
+    let gIdx = 0
+    for (let i = 1; i < poolSize; i++) {
+      if (gainFreeAt[i] < gainFreeAt[gIdx]) gIdx = i
+    }
+    gainFreeAt[gIdx] = ev.end
+
+    const g = gainPool[gIdx]
+    g.gain.setValueAtTime(0, ev.start)
+    g.gain.linearRampToValueAtTime(ev.gainPeak, ev.start + ATTACK_SEC)
+    g.gain.setValueAtTime(ev.gainPeak, ev.releaseStart)
+    g.gain.linearRampToValueAtTime(0, ev.end)
+
+    const osc = ctx.createOscillator()
+    osc.type = 'sawtooth'
+    osc.frequency.value = ev.frequency
+    osc.connect(g)
+    osc.start(ev.start)
+    osc.stop(ev.end)
+  }
+
+  const rendered = await ctx.startRendering()
+  const chunkData = rendered.getChannelData(0)
+  const startSample = Math.floor(chunkOffset * SAMPLE_RATE)
+  const copyLen = Math.min(chunkData.length, globalOutput.length - startSample)
+  for (let i = 0; i < copyLen; i++) {
+    globalOutput[startSample + i] += chunkData[i]
+  }
+}
+
+export async function generateDiWav(
+  notes: Note[],
+  onProgress?: ProgressCallback
+): Promise<ArrayBuffer> {
   if (notes.length === 0) throw new Error('No notes to render.')
 
-  // Filter out any notes with non-finite or non-positive values before touching AudioParams.
-  const MIN_DURATION = ATTACK_SEC + RELEASE_SEC
+  onProgress?.(5, 'Preparing audio engine...')
+
   const safeNotes = notes.filter(
     (n) =>
       isFinite(n.pitch) &&
@@ -73,42 +156,24 @@ export async function generateDiWav(notes: Note[]): Promise<ArrayBuffer> {
   )
   if (safeNotes.length === 0) throw new Error('No valid notes to render.')
 
-  // Find the end of the last note and add a short tail of silence.
+  safeNotes.sort((a, b) => a.startTime - b.startTime)
+
   const lastEnd = Math.max(...safeNotes.map((n) => n.startTime + n.duration))
-  const totalDuration = lastEnd + 0.5
+  const totalSamples = Math.ceil((lastEnd + 0.5) * SAMPLE_RATE)
+  const globalOutput = new Float32Array(totalSamples)
 
-  const context = new OfflineAudioContext(
-    1, // mono — correct for a guitar DI track
-    Math.ceil(totalDuration * SAMPLE_RATE),
-    SAMPLE_RATE
-  )
+  const chunkCount = Math.ceil(safeNotes.length / CHUNK_SIZE)
+  onProgress?.(10, 'Scheduling notes...')
 
-  for (const note of safeNotes) {
-    const osc = context.createOscillator()
-    const env = context.createGain()
-
-    osc.type = 'sawtooth'
-    osc.frequency.value = midiToHz(note.pitch)
-
-    const start = note.startTime
-    // Clamp duration so the envelope always has room for both attack and release.
-    const duration = Math.max(note.duration, MIN_DURATION)
-    const end = start + duration
-    // releaseStart must never be earlier than the end of the attack ramp.
-    const releaseStart = Math.max(start + ATTACK_SEC, end - RELEASE_SEC)
-
-    env.gain.setValueAtTime(0, start)
-    env.gain.linearRampToValueAtTime(NOTE_GAIN, start + ATTACK_SEC)
-    env.gain.setValueAtTime(NOTE_GAIN, releaseStart)
-    env.gain.linearRampToValueAtTime(0, end)
-
-    osc.connect(env)
-    env.connect(context.destination)
-
-    osc.start(start)
-    osc.stop(end)
+  for (let ci = 0; ci < chunkCount; ci++) {
+    const chunkNotes = safeNotes.slice(ci * CHUNK_SIZE, (ci + 1) * CHUNK_SIZE)
+    const pct = 10 + Math.floor((ci / chunkCount) * 75)
+    onProgress?.(pct, `Rendering chunk ${ci + 1} of ${chunkCount}...`)
+    await renderChunk(chunkNotes, globalOutput)
   }
 
-  const rendered = await context.startRendering()
-  return encodeWav(rendered)
+  onProgress?.(90, 'Encoding WAV...')
+  const wav = encodeWavFromFloat32(globalOutput)
+  onProgress?.(100, 'Done')
+  return wav
 }

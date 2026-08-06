@@ -1,4 +1,5 @@
 import type { Note } from '../types'
+import type { ProgressCallback } from './diWavGenerator'
 
 export type DrumStyle = 'rock' | 'shuffle' | 'ballad' | 'pop'
 
@@ -114,7 +115,8 @@ function makeNoiseBuffer(ctx: OfflineAudioContext, durationSecs: number): AudioB
 export async function generateDrumDiWav(
   bpm: number,
   style: DrumStyle,
-  notes: Note[]
+  notes: Note[],
+  onProgress?: ProgressCallback
 ): Promise<ArrayBuffer> {
   const secondsPerTick = 60 / (bpm * TICKS_PER_QUARTER)
   const barDuration = TICKS_PER_BAR * secondsPerTick
@@ -259,6 +261,8 @@ export async function generateDrumDiWav(
 
   // ── Build the timeline ─────────────────────────────────────────────────────
 
+  onProgress?.(10, 'Scheduling drum hits...')
+
   // Crash cymbal on bar 1 beat 1 to mark the top of the song.
   renderHit(CRASH, 0, 110)
 
@@ -269,7 +273,14 @@ export async function generateDrumDiWav(
     for (const hit of pattern) {
       renderHit(hit.pitch, barOffset + hit.tick * secondsPerTick, hit.velocity)
     }
+    if (bar % 8 === 0) {
+      const pct = 10 + Math.floor((bar / barCount) * 75)
+      onProgress?.(pct, `Rendering bar ${bar + 1} of ${barCount}...`)
+    }
   }
 
-  return encodeWav(await ctx.startRendering())
+  onProgress?.(90, 'Encoding WAV...')
+  const result = encodeWav(await ctx.startRendering())
+  onProgress?.(100, 'Done')
+  return result
 }

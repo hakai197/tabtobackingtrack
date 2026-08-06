@@ -177,16 +177,16 @@ Choose from 8 bass sounds including finger, pick, fretless, slap, and synth bass
 **Drum Kit**
 Choose from 8 GM drum kits:
 
-| Kit | Best For |
-|---|---|
-| Standard Kit | Rock, pop, general use |
-| Power Kit | Heavy rock, metal |
-| Room Kit | Smaller room ambience |
-| Jazz Kit | Jazz, swing |
-| Brush Kit | Soft jazz, acoustic |
-| Electronic Kit | Synth, electronic |
-| TR-808 Kit | Hip-hop, trap |
-| Orchestra Kit | Classical, cinematic |
+| Kit            | Best For               |
+| -------------- | ---------------------- |
+| Standard Kit   | Rock, pop, general use |
+| Power Kit      | Heavy rock, metal      |
+| Room Kit       | Smaller room ambience  |
+| Jazz Kit       | Jazz, swing            |
+| Brush Kit      | Soft jazz, acoustic    |
+| Electronic Kit | Synth, electronic      |
+| TR-808 Kit     | Hip-hop, trap          |
+| Orchestra Kit  | Classical, cinematic   |
 
 Preset selections are remembered for the session but reset to defaults on next launch.
 

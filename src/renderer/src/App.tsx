@@ -11,7 +11,7 @@ import { parseGuitarPro } from './utils/guitarProParser'
 import { parseMidi } from './utils/midiParser'
 import { parseMusicXml } from './utils/musicXmlParser'
 import { parseTab, runTabParserTests } from './utils/tabParser'
-import { generateDiWav } from './utils/diWavGenerator'
+import { generateDiWav, type ProgressCallback } from './utils/diWavGenerator'
 import { generateDrumDiWav, type DrumStyle } from './utils/drumDiGenerator'
 import { generateBassDiWav, type BassStyle } from './utils/bassDiGenerator'
 import { generateDrumMidi } from './utils/drumMidiGenerator'
@@ -98,6 +98,10 @@ function App(): JSX.Element {
     drumKit: 0 // Standard Kit
   })
   const [isGenerating, setIsGenerating] = useState(false)
+  const [exportProgress, setExportProgress] = useState<{
+    percent: number
+    message: string
+  } | null>(null)
   const [generateError, setGenerateError] = useState<string | null>(null)
   const [exportFolder, setExportFolder] = useState<string | null>(null)
 
@@ -253,25 +257,32 @@ function App(): JSX.Element {
 
   async function handleGenerateStandard(): Promise<void> {
     const fileEntries: Array<[string, ArrayBuffer | string]> = []
-    const wavPromises: Array<Promise<void>> = []
+
+    // Collect WAV generation tasks in display order so progress stages are sequential.
+    type WavTask = {
+      label: string
+      run: (cb: ProgressCallback) => Promise<[string, ArrayBuffer]>
+    }
+    const wavTasks: WavTask[] = []
 
     if (exportGuitar && guitar.loaded) {
       const scaled = scaleNotes(guitar.notes, guitar.analysisResult!.bpm, userBPM)
-      wavPromises.push(
-        generateDiWav(scaled).then((wav) => {
-          fileEntries.push(['guitar_di.wav', wav])
-        })
-      )
+      wavTasks.push({
+        label: 'Guitar',
+        run: async (cb) => ['guitar_di.wav', await generateDiWav(scaled, cb)]
+      })
     }
 
     if (exportBass && bass.loaded) {
       const scaled = scaleNotes(bass.notes, bass.analysisResult!.bpm, userBPM)
       if (exportMode === 'wav') {
-        wavPromises.push(
-          generateBassDiWav(userBPM, bassStyle, scaled).then((wav) => {
-            fileEntries.push(['bass_di.wav', wav])
-          })
-        )
+        wavTasks.push({
+          label: 'Bass',
+          run: async (cb) => [
+            'bass_di.wav',
+            await generateBassDiWav(userBPM, bassStyle, scaled, cb)
+          ]
+        })
       } else {
         fileEntries.push(['bass_track.mid', generateBassMidi(userBPM, bassStyle, scaled)])
       }
@@ -280,17 +291,35 @@ function App(): JSX.Element {
     if (exportDrums && drums.loaded) {
       const scaled = scaleNotes(drums.notes, drums.analysisResult!.bpm, userBPM)
       if (exportMode === 'wav') {
-        wavPromises.push(
-          generateDrumDiWav(userBPM, drumStyle, scaled).then((wav) => {
-            fileEntries.push(['drum_track.wav', wav])
-          })
-        )
+        wavTasks.push({
+          label: 'Drums',
+          run: async (cb) => [
+            'drum_track.wav',
+            await generateDrumDiWav(userBPM, drumStyle, scaled, cb)
+          ]
+        })
       } else {
         fileEntries.push(['drum_track.mid', generateDrumMidi(userBPM, drumStyle, scaled)])
       }
     }
 
-    await Promise.all(wavPromises)
+    setExportProgress({ percent: 5, message: 'Preparing...' })
+
+    for (let i = 0; i < wavTasks.length; i++) {
+      const task = wavTasks[i]
+      const stageStart = 10 + Math.floor((i / wavTasks.length) * 80)
+      const stageEnd = 10 + Math.floor(((i + 1) / wavTasks.length) * 80)
+      const cb: ProgressCallback = (pct, msg) => {
+        setExportProgress({
+          percent: stageStart + Math.floor((pct / 100) * (stageEnd - stageStart)),
+          message: `${task.label}: ${msg}`
+        })
+      }
+      const [filename, wav] = await task.run(cb)
+      fileEntries.push([filename, wav])
+    }
+
+    setExportProgress({ percent: 93, message: 'Writing files...' })
 
     fileEntries.push(['session.txt', buildSessionTxt()])
 
@@ -389,6 +418,7 @@ function App(): JSX.Element {
 
   async function handleGenerate(): Promise<void> {
     setIsGenerating(true)
+    setExportProgress(null)
     setGenerateError(null)
     setExportFolder(null)
     try {
@@ -401,6 +431,7 @@ function App(): JSX.Element {
       setGenerateError(err instanceof Error ? err.message : 'Generation failed.')
     } finally {
       setIsGenerating(false)
+      setExportProgress(null)
     }
   }
 
@@ -674,6 +705,7 @@ function App(): JSX.Element {
           onInstrumentPresetsChange={setInstrumentPresets}
           onExport={handleGenerate}
           isGenerating={isGenerating}
+          exportProgress={exportProgress}
           generateError={generateError}
           exportFolder={exportFolder}
         />

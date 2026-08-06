@@ -45,6 +45,7 @@ type Props = {
   onInstrumentPresetsChange: (presets: InstrumentPresets) => void
   onExport: () => void
   isGenerating: boolean
+  exportProgress: { percent: number; message: string } | null
   generateError: string | null
   exportFolder: string | null
 }
@@ -72,6 +73,7 @@ export function ExportPanel({
   onInstrumentPresetsChange,
   onExport,
   isGenerating,
+  exportProgress,
   generateError,
   exportFolder
 }: Props): JSX.Element {
@@ -222,9 +224,25 @@ export function ExportPanel({
               disabled={!anyChecked || isGenerating}
               onClick={onExport}
             >
-              {isGenerating ? 'Generating…' : `🎵 ${exportLabel}`}
+              {isGenerating && exportProgress
+                ? `⏳ Rendering… ${exportProgress.percent}%`
+                : isGenerating
+                  ? 'Generating…'
+                  : `🎵 ${exportLabel}`}
             </button>
           </div>
+
+          {isGenerating && exportProgress && (
+            <div className="export-progress">
+              <div className="export-progress-bar">
+                <div
+                  className="export-progress-fill"
+                  style={{ width: `${exportProgress.percent}%` }}
+                />
+              </div>
+              <span className="export-progress-label animate-pulse">{exportProgress.message}</span>
+            </div>
+          )}
 
           {generateError && <p className="export-error">{generateError}</p>}
           {exportFolder && !generateError && (
