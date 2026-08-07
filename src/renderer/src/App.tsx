@@ -22,7 +22,6 @@ import { generateBassDiWav, type BassStyle } from './utils/bassDiGenerator'
 import { generateDrumMidi } from './utils/drumMidiGenerator'
 import { generateBassMidi } from './utils/bassMidiGenerator'
 import { detectInstrumentFromFilename } from './utils/instrumentDetector'
-import { extractBassNotes } from './utils/bassNoteExtractor'
 import type { AudioQuality, InstrumentPresets } from './components/AudioQualityPanel'
 import type {
   AnalysisResult,
