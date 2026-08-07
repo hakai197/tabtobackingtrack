@@ -420,8 +420,18 @@ function App(): JSX.Element {
           })
         }
       } else {
-        const scaled = scaleNotes(bass.notes, bass.analysisResult!.bpm, userBPM)
-        fileEntries.push(['bass_track.mid', generateBassMidi(userBPM, bassStyle, scaled)])
+        if (gpTracks && gpTracks.length > 0) {
+          for (const track of gpTracks) {
+            const scaledTrack = scaleNotes(track.notes, bass.analysisResult!.bpm, userBPM)
+            fileEntries.push([
+              `${track.safeName}_bass.mid`,
+              generateBassMidi(userBPM, bassStyle, scaledTrack)
+            ])
+          }
+        } else {
+          const scaled = scaleNotes(bass.notes, bass.analysisResult!.bpm, userBPM)
+          fileEntries.push(['bass_track.mid', generateBassMidi(userBPM, bassStyle, scaled)])
+        }
       }
     }
 
@@ -450,8 +460,18 @@ function App(): JSX.Element {
           })
         }
       } else {
-        const scaled = scaleNotes(drums.notes, drums.analysisResult!.bpm, userBPM)
-        fileEntries.push(['drum_track.mid', generateDrumMidi(userBPM, drumStyle, scaled)])
+        if (gpTracks && gpTracks.length > 0) {
+          for (const track of gpTracks) {
+            const scaledTrack = scaleNotes(track.notes, drums.analysisResult!.bpm, userBPM)
+            fileEntries.push([
+              `${track.safeName}_drum.mid`,
+              generateDrumMidi(userBPM, drumStyle, scaledTrack)
+            ])
+          }
+        } else {
+          const scaled = scaleNotes(drums.notes, drums.analysisResult!.bpm, userBPM)
+          fileEntries.push(['drum_track.mid', generateDrumMidi(userBPM, drumStyle, scaled)])
+        }
       }
     }
 
@@ -701,7 +721,10 @@ function App(): JSX.Element {
       const gpTracks = bass.gpTracks
       if (gpTracks && gpTracks.length > 0) {
         for (const track of gpTracks) {
-          lines.push(`${`${track.safeName}_di.wav`.padEnd(24)} — ${track.name} (bass DI)`)
+          const ext = exportMode === 'wav' ? '_di.wav' : '_bass.mid'
+          const desc =
+            exportMode === 'wav' ? `${track.name} (bass DI)` : `${track.name} (bass MIDI)`
+          lines.push(`${`${track.safeName}${ext}`.padEnd(24)} — ${desc}`)
         }
       } else {
         const file = exportMode === 'wav' ? 'bass_di.wav' : 'bass_track.mid'
@@ -714,12 +737,19 @@ function App(): JSX.Element {
       const gpTracks = drums.gpTracks
       if (gpTracks && gpTracks.length > 0) {
         for (const track of gpTracks) {
-          lines.push(`${`${track.safeName}_drum.wav`.padEnd(24)} — ${track.name} (drums)`)
+          const ext = exportMode === 'wav' ? '_drum.wav' : '_drum.mid'
+          const desc =
+            exportMode === 'wav'
+              ? `${track.name} (drums WAV)`
+              : `${track.name} (drums MIDI — load into SSD)`
+          lines.push(`${`${track.safeName}${ext}`.padEnd(24)} — ${desc}`)
         }
       } else {
         const file = exportMode === 'wav' ? 'drum_track.wav' : 'drum_track.mid'
         const desc =
-          exportMode === 'wav' ? `Drum synthesis: ${drumStyle}` : `Drum MIDI: ${drumStyle}`
+          exportMode === 'wav'
+            ? `Drum synthesis: ${drumStyle}`
+            : `Drum MIDI: ${drumStyle} — load into SSD`
         lines.push(`${file.padEnd(16)} — ${desc}`)
       }
     }
