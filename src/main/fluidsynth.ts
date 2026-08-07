@@ -7,6 +7,8 @@ import { is } from '@electron-toolkit/utils'
 
 const execFileAsync = promisify(execFile)
 
+const FLUIDSYNTH_TIMEOUT_MS = 60_000
+
 export type FluidSynthStatus = {
   fluidSynthFound: boolean
   soundFontFound: boolean
@@ -39,7 +41,7 @@ export function checkFluidSynth(): FluidSynthStatus {
 export async function renderMidiToWav(midiPath: string, outputPath: string): Promise<void> {
   const fluidSynthPath = getFluidSynthPath()
   const soundFontPath = getSoundFontPath()
-  await execFileAsync(fluidSynthPath, [
+  const args = [
     '--quiet',
     '--no-shell',
     '--gain',
@@ -49,5 +51,23 @@ export async function renderMidiToWav(midiPath: string, outputPath: string): Pro
     '--fast-render',
     midiPath,
     soundFontPath
-  ])
+  ]
+  const opts = { timeout: FLUIDSYNTH_TIMEOUT_MS, killSignal: 'SIGTERM' as const }
+  try {
+    if (process.env.NODE_ENV === 'development') {
+      const start = Date.now()
+      await execFileAsync(fluidSynthPath, args, opts)
+      console.log(`FluidSynth render took: ${Date.now() - start}ms`)
+    } else {
+      await execFileAsync(fluidSynthPath, args, opts)
+    }
+  } catch (err) {
+    const e = err as NodeJS.ErrnoException & { killed?: boolean }
+    if (e.killed) {
+      throw new Error(
+        'FluidSynth render timed out after 60 seconds. Try a shorter section or use Standard mode.'
+      )
+    }
+    throw err
+  }
 }

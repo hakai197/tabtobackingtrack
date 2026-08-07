@@ -469,12 +469,14 @@ function App(): JSX.Element {
       return
     }
 
-    const tasks: Array<Promise<{ success: boolean; error?: string }>> = []
+    type EnhancedTask = { name: string; promise: Promise<{ success: boolean; error?: string }> }
+    const enhancedTasks: EnhancedTask[] = []
 
     if (exportGuitar && guitar.loaded) {
       const scaled = scaleNotes(guitar.notes, guitar.analysisResult!.bpm, userBPM)
-      tasks.push(
-        window.api.renderInstrumentWavEnhanced({
+      enhancedTasks.push({
+        name: 'Guitar',
+        promise: window.api.renderInstrumentWavEnhanced({
           notes: scaled,
           instrument: 'guitar',
           bpm: userBPM,
@@ -483,14 +485,15 @@ function App(): JSX.Element {
           filename: 'guitar_di.wav',
           gmProgram: instrumentPresets.guitar
         })
-      )
+      })
     }
 
     if (exportBass && bass.loaded) {
       const scaled = scaleNotes(bass.notes, bass.analysisResult!.bpm, userBPM)
       const bassNotes = extractBassNotes(userBPM, bassStyle, scaled)
-      tasks.push(
-        window.api.renderInstrumentWavEnhanced({
+      enhancedTasks.push({
+        name: 'Bass',
+        promise: window.api.renderInstrumentWavEnhanced({
           notes: bassNotes,
           instrument: 'bass',
           bpm: userBPM,
@@ -499,7 +502,7 @@ function App(): JSX.Element {
           filename: 'bass_di.wav',
           gmProgram: instrumentPresets.bass
         })
-      )
+      })
     }
 
     if (exportDrums && drums.loaded) {
@@ -509,8 +512,9 @@ function App(): JSX.Element {
           ? Math.max(...scaledDrums.map((n) => n.startTime + n.duration))
           : (60 / userBPM) * 16
       const drumNotes = drumPatternToNotes(userBPM, drumStyle, songLength)
-      tasks.push(
-        window.api.renderInstrumentWavEnhanced({
+      enhancedTasks.push({
+        name: 'Drums',
+        promise: window.api.renderInstrumentWavEnhanced({
           notes: drumNotes,
           instrument: 'drums',
           bpm: userBPM,
@@ -519,15 +523,31 @@ function App(): JSX.Element {
           filename: 'drum_track.wav',
           drumKitVariation: instrumentPresets.drumKit
         })
-      )
+      })
     }
 
-    const results = await Promise.all(tasks)
+    setExportProgress({ percent: 10, message: 'Starting FluidSynth...' })
+
+    let completedCount = 0
+    const wrappedTasks = enhancedTasks.map(({ name, promise }) =>
+      promise.then((result) => {
+        completedCount++
+        setExportProgress({
+          percent: 10 + Math.floor((completedCount / enhancedTasks.length) * 80),
+          message: `Rendering ${name}...`
+        })
+        return result
+      })
+    )
+
+    const results = await Promise.all(wrappedTasks)
     const failed = results.find((r) => !r.success)
     if (failed) {
       setGenerateError(failed.error ?? 'FluidSynth rendering failed.')
       return
     }
+
+    setExportProgress({ percent: 95, message: 'Writing files...' })
 
     await window.api.writeTextFile({
       folder,
