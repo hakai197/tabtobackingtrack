@@ -274,7 +274,7 @@ function App(): JSX.Element {
       }
       loadSlot(instrument, result, file.name)
     } catch {
-      // Per-card errors are shown in InstrumentCard; global drop errors are silent here.
+      // Per-card errors are shown in InstrumentCard
     }
   }
 
@@ -284,11 +284,10 @@ function App(): JSX.Element {
     const file = e.dataTransfer.files[0]
     if (!file) return
 
-    // If the drop landed on an instrument card, InstrumentCard already handled it
-    // via onGuitarProDrop — don't process it again here.
     const target = e.target as HTMLElement
     const isInstrumentCardDrop =
-      target.closest('.instrument-dropzone') !== null || target.closest('.instrument-card') !== null
+      target.closest('.instrument-dropzone') !== null ||
+      target.closest('.instrument-card') !== null
     if (isInstrumentCardDrop) {
       console.log('DROP handled by InstrumentCard — skipping App onAppDrop')
       return
@@ -338,6 +337,32 @@ function App(): JSX.Element {
     if (file) await loadFileToSlot(file, instrument)
   }
 
+  async function handleGuitarProDrop(file: File): Promise<void> {
+    const buf = await file.arrayBuffer()
+    try {
+      const multiResult = parseGuitarProMultiTrack(buf)
+      console.log('GP5 multiResult:', {
+        guitarNotes: multiResult.guitar.length,
+        bassNotes: multiResult.bass.length,
+        drumNotes: multiResult.drums.length,
+        tracks: multiResult.detectedTracks,
+        bpm: multiResult.bpm,
+        timeSignature: multiResult.timeSignature
+      })
+      const hasAny =
+        multiResult.guitar.length > 0 ||
+        multiResult.bass.length > 0 ||
+        multiResult.drums.length > 0
+      if (hasAny) {
+        loadGuitarProResult(multiResult, file.name)
+        return
+      }
+      console.warn('GP5 parsed but all tracks empty')
+    } catch (err) {
+      console.error('parseGuitarProMultiTrack error:', err)
+    }
+  }
+
   // ── Export ──────────────────────────────────────────────────
 
   async function handleGenerateStandard(): Promise<void> {
@@ -356,7 +381,10 @@ function App(): JSX.Element {
           const scaledTrack = scaleNotes(track.notes, guitar.analysisResult!.bpm, userBPM)
           wavTasks.push({
             label: track.name,
-            run: async (cb) => [`${track.safeName}_di.wav`, await generateDiWav(scaledTrack, cb)]
+            run: async (cb) => [
+              `${track.safeName}_di.wav`,
+              await generateDiWav(scaledTrack, cb)
+            ]
           })
         }
       } else {
@@ -376,7 +404,10 @@ function App(): JSX.Element {
             const scaledTrack = scaleNotes(track.notes, bass.analysisResult!.bpm, userBPM)
             wavTasks.push({
               label: track.name,
-              run: async (cb) => [`${track.safeName}_di.wav`, await generateDiWav(scaledTrack, cb)]
+              run: async (cb) => [
+                `${track.safeName}_di.wav`,
+                await generateDiWav(scaledTrack, cb)
+              ]
             })
           }
         } else {
@@ -470,58 +501,129 @@ function App(): JSX.Element {
 
     setExportProgress({ percent: 10, message: 'Starting FluidSynth...' })
 
+    // ── Guitar — one file per GP5 track if available ──────────
     if (exportGuitar && guitar.loaded) {
-      setExportProgress({ percent: 20, message: 'Rendering guitar...' })
-      const scaled = scaleNotes(guitar.notes, guitar.analysisResult!.bpm, userBPM)
-      const result = await window.api.renderInstrumentWavEnhanced({
-        notes: scaled,
-        instrument: 'guitar',
-        bpm: userBPM,
-        timeSignature: userTimeSig,
-        folder,
-        filename: 'guitar_di.wav',
-        gmProgram: instrumentPresets.guitar
-      })
-      if (!result.success) {
-        setGenerateError(result.error ?? 'Guitar render failed.')
-        return
+      const gpTracks = guitar.gpTracks
+      if (gpTracks && gpTracks.length > 0) {
+        for (let i = 0; i < gpTracks.length; i++) {
+          const track = gpTracks[i]
+          const pct = 20 + Math.floor((i / gpTracks.length) * 25)
+          setExportProgress({ percent: pct, message: `Rendering ${track.name}...` })
+          const scaledTrack = scaleNotes(track.notes, guitar.analysisResult!.bpm, userBPM)
+          const result = await window.api.renderInstrumentWavEnhanced({
+            notes: scaledTrack,
+            instrument: 'guitar',
+            bpm: userBPM,
+            timeSignature: userTimeSig,
+            folder,
+            filename: `${track.safeName}_di.wav`,
+            gmProgram: instrumentPresets.guitar
+          })
+          if (!result.success) {
+            setGenerateError(result.error ?? `${track.name} render failed.`)
+            return
+          }
+        }
+      } else {
+        setExportProgress({ percent: 20, message: 'Rendering guitar...' })
+        const scaled = scaleNotes(guitar.notes, guitar.analysisResult!.bpm, userBPM)
+        const result = await window.api.renderInstrumentWavEnhanced({
+          notes: scaled,
+          instrument: 'guitar',
+          bpm: userBPM,
+          timeSignature: userTimeSig,
+          folder,
+          filename: 'guitar_di.wav',
+          gmProgram: instrumentPresets.guitar
+        })
+        if (!result.success) {
+          setGenerateError(result.error ?? 'Guitar render failed.')
+          return
+        }
       }
     }
 
+    // ── Bass — one file per GP5 track if available ────────────
     if (exportBass && bass.loaded) {
-      setExportProgress({ percent: 50, message: 'Rendering bass...' })
-      const scaled = scaleNotes(bass.notes, bass.analysisResult!.bpm, userBPM)
-      const bassNotes = extractBassNotes(userBPM, bassStyle, scaled)
-      const result = await window.api.renderInstrumentWavEnhanced({
-        notes: bassNotes,
-        instrument: 'bass',
-        bpm: userBPM,
-        timeSignature: userTimeSig,
-        folder,
-        filename: 'bass_di.wav',
-        gmProgram: instrumentPresets.bass
-      })
-      if (!result.success) {
-        setGenerateError(result.error ?? 'Bass render failed.')
-        return
+      const gpTracks = bass.gpTracks
+      if (gpTracks && gpTracks.length > 0) {
+        for (let i = 0; i < gpTracks.length; i++) {
+          const track = gpTracks[i]
+          const pct = 45 + Math.floor((i / gpTracks.length) * 20)
+          setExportProgress({ percent: pct, message: `Rendering ${track.name}...` })
+          const scaledTrack = scaleNotes(track.notes, bass.analysisResult!.bpm, userBPM)
+          const result = await window.api.renderInstrumentWavEnhanced({
+            notes: scaledTrack,
+            instrument: 'bass',
+            bpm: userBPM,
+            timeSignature: userTimeSig,
+            folder,
+            filename: `${track.safeName}_di.wav`,
+            gmProgram: instrumentPresets.bass
+          })
+          if (!result.success) {
+            setGenerateError(result.error ?? `${track.name} render failed.`)
+            return
+          }
+        }
+      } else {
+        setExportProgress({ percent: 50, message: 'Rendering bass...' })
+        const scaled = scaleNotes(bass.notes, bass.analysisResult!.bpm, userBPM)
+        const result = await window.api.renderInstrumentWavEnhanced({
+          notes: scaled,
+          instrument: 'bass',
+          bpm: userBPM,
+          timeSignature: userTimeSig,
+          folder,
+          filename: 'bass_di.wav',
+          gmProgram: instrumentPresets.bass
+        })
+        if (!result.success) {
+          setGenerateError(result.error ?? 'Bass render failed.')
+          return
+        }
       }
     }
 
+    // ── Drums — one file per GP5 track if available ───────────
     if (exportDrums && drums.loaded) {
-      setExportProgress({ percent: 75, message: 'Rendering drums...' })
-      const scaledDrums = scaleNotes(drums.notes, drums.analysisResult!.bpm, userBPM)
-      const result = await window.api.renderInstrumentWavEnhanced({
-        notes: scaledDrums,
-        instrument: 'drums',
-        bpm: userBPM,
-        timeSignature: userTimeSig,
-        folder,
-        filename: 'drum_track.wav',
-        drumKitVariation: instrumentPresets.drumKit
-      })
-      if (!result.success) {
-        setGenerateError(result.error ?? 'Drum render failed.')
-        return
+      const gpTracks = drums.gpTracks
+      if (gpTracks && gpTracks.length > 0) {
+        for (let i = 0; i < gpTracks.length; i++) {
+          const track = gpTracks[i]
+          const pct = 70 + Math.floor((i / gpTracks.length) * 20)
+          setExportProgress({ percent: pct, message: `Rendering ${track.name}...` })
+          const scaledTrack = scaleNotes(track.notes, drums.analysisResult!.bpm, userBPM)
+          const result = await window.api.renderInstrumentWavEnhanced({
+            notes: scaledTrack,
+            instrument: 'drums',
+            bpm: userBPM,
+            timeSignature: userTimeSig,
+            folder,
+            filename: `${track.safeName}_drum.wav`,
+            drumKitVariation: instrumentPresets.drumKit
+          })
+          if (!result.success) {
+            setGenerateError(result.error ?? `${track.name} render failed.`)
+            return
+          }
+        }
+      } else {
+        setExportProgress({ percent: 75, message: 'Rendering drums...' })
+        const scaledDrums = scaleNotes(drums.notes, drums.analysisResult!.bpm, userBPM)
+        const result = await window.api.renderInstrumentWavEnhanced({
+          notes: scaledDrums,
+          instrument: 'drums',
+          bpm: userBPM,
+          timeSignature: userTimeSig,
+          folder,
+          filename: 'drum_track.wav',
+          drumKitVariation: instrumentPresets.drumKit
+        })
+        if (!result.success) {
+          setGenerateError(result.error ?? 'Drum render failed.')
+          return
+        }
       }
     }
 
@@ -552,29 +654,6 @@ function App(): JSX.Element {
     } finally {
       setIsGenerating(false)
       setExportProgress(null)
-    }
-  }
-  async function handleGuitarProDrop(file: File): Promise<void> {
-    const buf = await file.arrayBuffer()
-    try {
-      const multiResult = parseGuitarProMultiTrack(buf)
-      console.log('GP5 multiResult:', {
-        guitarNotes: multiResult.guitar.length,
-        bassNotes: multiResult.bass.length,
-        drumNotes: multiResult.drums.length,
-        tracks: multiResult.detectedTracks,
-        bpm: multiResult.bpm,
-        timeSignature: multiResult.timeSignature
-      })
-      const hasAny =
-        multiResult.guitar.length > 0 || multiResult.bass.length > 0 || multiResult.drums.length > 0
-      if (hasAny) {
-        loadGuitarProResult(multiResult, file.name)
-        return
-      }
-      console.warn('GP5 parsed but all tracks empty')
-    } catch (err) {
-      console.error('parseGuitarProMultiTrack error:', err)
     }
   }
 
@@ -676,7 +755,12 @@ function App(): JSX.Element {
   // ── Render ──────────────────────────────────────────────────
 
   return (
-    <div className="app" onDragOver={onAppDragOver} onDragLeave={onAppDragLeave} onDrop={onAppDrop}>
+    <div
+      className="app"
+      onDragOver={onAppDragOver}
+      onDragLeave={onAppDragLeave}
+      onDrop={onAppDrop}
+    >
       <UpdateNotification />
 
       <header className="app-header">
@@ -703,6 +787,7 @@ function App(): JSX.Element {
 
       <main className="app-body">
         {appMode === 'converter' && <ConverterPanel />}
+
         {appMode === 'backing-track' && (
           <div className="app-top-row">
             <section className="panel panel-input">
@@ -715,7 +800,7 @@ function App(): JSX.Element {
                   gpTracks={guitar.gpTracks}
                   onLoad={(result, fileName) => loadSlot('guitar', result, fileName)}
                   onClear={() => clearSlot('guitar')}
-                  onGuitarProDrop={handleGuitarProDrop} // ← add this
+                  onGuitarProDrop={handleGuitarProDrop}
                 />
                 <InstrumentCard
                   instrument="bass"
@@ -724,7 +809,7 @@ function App(): JSX.Element {
                   gpTracks={bass.gpTracks}
                   onLoad={(result, fileName) => loadSlot('bass', result, fileName)}
                   onClear={() => clearSlot('bass')}
-                  onGuitarProDrop={handleGuitarProDrop} // ← add this
+                  onGuitarProDrop={handleGuitarProDrop}
                 />
                 <InstrumentCard
                   instrument="drums"
@@ -733,7 +818,7 @@ function App(): JSX.Element {
                   gpTracks={drums.gpTracks}
                   onLoad={(result, fileName) => loadSlot('drums', result, fileName)}
                   onClear={() => clearSlot('drums')}
-                  onGuitarProDrop={handleGuitarProDrop} // ← add this
+                  onGuitarProDrop={handleGuitarProDrop}
                 />
               </div>
             </section>
@@ -845,7 +930,9 @@ function App(): JSX.Element {
                 {activeSlot?.loaded && (
                   <div className="analysis-stat">
                     <span className="stat-label">Notes Detected</span>
-                    <span className="stat-value">{activeSlot.notes.length.toLocaleString()}</span>
+                    <span className="stat-value">
+                      {activeSlot.notes.length.toLocaleString()}
+                    </span>
                   </div>
                 )}
               </div>
