@@ -59,7 +59,9 @@ export async function writeTempMidi(
   const arr = midi.toArray()
   const buf = Buffer.allocUnsafe(arr.byteLength)
   buf.set(arr)
+  console.log('Writing temp MIDI to:', tmpPath)
   await writeFile(tmpPath, buf)
+  console.log('Temp MIDI written, size:', buf.byteLength, 'bytes')
 
   return tmpPath
 }

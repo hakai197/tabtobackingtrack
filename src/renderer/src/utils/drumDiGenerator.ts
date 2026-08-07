@@ -242,7 +242,7 @@ export async function generateDrumDiWav(
   let allHits: HitItem[] = []
 
   if (notes.length > 0) {
-    allHits = notes.map(n => ({
+    allHits = notes.map((n) => ({
       pitch: n.pitch,
       startTime: n.startTime,
       velocity: n.velocity
@@ -272,8 +272,7 @@ export async function generateDrumDiWav(
     return encodeWav(silence)
   }
 
-  const totalDuration =
-    allHits.reduce((max, h) => Math.max(max, h.startTime + 1.0), 0) + 1.0
+  const totalDuration = allHits.reduce((max, h) => Math.max(max, h.startTime + 1.0), 0) + 1.0
 
   onProgress?.(5, 'Preparing drum render...')
 
@@ -287,7 +286,7 @@ export async function generateDrumDiWav(
   while (chunkStart < totalDuration) {
     const chunkEnd = Math.min(chunkStart + safeChunkDuration, totalDuration)
     const chunkHits = allHits.filter(
-      h => h.startTime >= chunkStart && h.startTime < chunkEnd + 1.0
+      (h) => h.startTime >= chunkStart && h.startTime < chunkEnd + 1.0
     )
     chunks.push({
       hits: chunkHits,

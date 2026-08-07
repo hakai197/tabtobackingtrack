@@ -1,11 +1,8 @@
-import { execFile } from 'child_process'
-import { promisify } from 'util'
+import { spawn } from 'child_process'
 import path from 'path'
 import { existsSync } from 'fs'
 import { app } from 'electron'
 import { is } from '@electron-toolkit/utils'
-
-const execFileAsync = promisify(execFile)
 
 export type FluidSynthStatus = {
   fluidSynthFound: boolean
@@ -40,10 +37,6 @@ export async function renderMidiToWav(midiPath: string, outputPath: string): Pro
   const fluidSynthPath = getFluidSynthPath()
   const soundFontPath = getSoundFontPath()
 
-  // Argument order is critical for FluidSynth:
-  // Options first, then SF2 file, then MIDI file.
-  // -a null and -m null prevent audio/MIDI driver
-  // initialization which causes hanging on Windows.
   const args = [
     '--quiet',
     '--no-shell',
@@ -57,39 +50,55 @@ export async function renderMidiToWav(midiPath: string, outputPath: string): Pro
     '0.8',
     '--fast-render',
     outputPath,
-    soundFontPath, // SF2 must come before MIDI
-    midiPath // MIDI file always last
+    soundFontPath,
+    midiPath
   ]
 
-  const opts = {
-    timeout: 120_000,
-    killSignal: 'SIGTERM' as const
-  }
+  console.log('FluidSynth spawning:', fluidSynthPath)
+  console.log('MIDI path:', midiPath)
+  console.log('Output path:', outputPath)
 
-  try {
+  return new Promise((resolve, reject) => {
     const start = Date.now()
-    const { stderr } = await execFileAsync(fluidSynthPath, args, opts)
-    console.log(`FluidSynth render took: ${Date.now() - start}ms`)
-    if (stderr) console.log('FluidSynth stderr:', stderr)
-  } catch (err) {
-    const e = err as NodeJS.ErrnoException & {
-      killed?: boolean
-      stderr?: string
-      stdout?: string
-    }
-    console.error('FluidSynth failed')
-    console.error('FluidSynth error message:', e.message)
-    console.error('FluidSynth stderr:', e.stderr)
-    console.error('FluidSynth stdout:', e.stdout)
-    console.error('Args used:', args)
-    console.error('FluidSynth path:', fluidSynthPath)
-    console.error('SoundFont path:', soundFontPath)
-    console.error('MIDI path:', midiPath)
-    console.error('Output path:', outputPath)
+    const child = spawn(fluidSynthPath, args, {
+      stdio: ['ignore', 'pipe', 'pipe'],
+      windowsHide: true
+    })
 
-    if (e.killed) {
-      throw new Error('FluidSynth render timed out. Try Standard mode for large files.')
-    }
-    throw new Error(`FluidSynth failed: ${e.stderr || e.message}`)
-  }
+    let stderrOutput = ''
+
+    child.stdout?.on('data', (data: Buffer) => {
+      console.log('FluidSynth stdout:', data.toString().trim())
+    })
+
+    child.stderr?.on('data', (data: Buffer) => {
+      const text = data.toString()
+      stderrOutput += text
+      console.log('FluidSynth stderr:', text.trim())
+    })
+
+    const timer = setTimeout(() => {
+      console.error('FluidSynth timed out after 120s, sending SIGTERM')
+      child.kill('SIGTERM')
+      setTimeout(() => child.kill('SIGKILL'), 2000)
+      reject(new Error('FluidSynth render timed out. Try Standard mode for large files.'))
+    }, 120_000)
+
+    child.on('close', (code) => {
+      clearTimeout(timer)
+      console.log(`FluidSynth render took: ${Date.now() - start}ms, exit code: ${code}`)
+      if (code === 0) {
+        resolve()
+      } else {
+        console.error('FluidSynth stderr output:', stderrOutput)
+        reject(new Error(`FluidSynth failed (exit ${code}): ${stderrOutput || 'no output'}`))
+      }
+    })
+
+    child.on('error', (err) => {
+      clearTimeout(timer)
+      console.error('FluidSynth spawn error:', err)
+      reject(new Error(`FluidSynth spawn failed: ${err.message}`))
+    })
+  })
 }

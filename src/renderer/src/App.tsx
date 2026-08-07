@@ -22,7 +22,6 @@ import { generateBassDiWav, type BassStyle } from './utils/bassDiGenerator'
 import { generateDrumMidi } from './utils/drumMidiGenerator'
 import { generateBassMidi } from './utils/bassMidiGenerator'
 import { detectInstrumentFromFilename } from './utils/instrumentDetector'
-import { drumPatternToNotes } from './utils/drumPatternToNotes'
 import { extractBassNotes } from './utils/bassNoteExtractor'
 import type { AudioQuality, InstrumentPresets } from './components/AudioQualityPanel'
 import type {
@@ -469,85 +468,64 @@ function App(): JSX.Element {
       return
     }
 
-    type EnhancedTask = { name: string; promise: Promise<{ success: boolean; error?: string }> }
-    const enhancedTasks: EnhancedTask[] = []
+    setExportProgress({ percent: 10, message: 'Starting FluidSynth...' })
 
     if (exportGuitar && guitar.loaded) {
+      setExportProgress({ percent: 20, message: 'Rendering guitar...' })
       const scaled = scaleNotes(guitar.notes, guitar.analysisResult!.bpm, userBPM)
-      enhancedTasks.push({
-        name: 'Guitar',
-        promise: window.api.renderInstrumentWavEnhanced({
-          notes: scaled,
-          instrument: 'guitar',
-          bpm: userBPM,
-          timeSignature: userTimeSig,
-          folder,
-          filename: 'guitar_di.wav',
-          gmProgram: instrumentPresets.guitar
-        })
+      const result = await window.api.renderInstrumentWavEnhanced({
+        notes: scaled,
+        instrument: 'guitar',
+        bpm: userBPM,
+        timeSignature: userTimeSig,
+        folder,
+        filename: 'guitar_di.wav',
+        gmProgram: instrumentPresets.guitar
       })
+      if (!result.success) {
+        setGenerateError(result.error ?? 'Guitar render failed.')
+        return
+      }
     }
 
     if (exportBass && bass.loaded) {
+      setExportProgress({ percent: 50, message: 'Rendering bass...' })
       const scaled = scaleNotes(bass.notes, bass.analysisResult!.bpm, userBPM)
       const bassNotes = extractBassNotes(userBPM, bassStyle, scaled)
-      enhancedTasks.push({
-        name: 'Bass',
-        promise: window.api.renderInstrumentWavEnhanced({
-          notes: bassNotes,
-          instrument: 'bass',
-          bpm: userBPM,
-          timeSignature: userTimeSig,
-          folder,
-          filename: 'bass_di.wav',
-          gmProgram: instrumentPresets.bass
-        })
+      const result = await window.api.renderInstrumentWavEnhanced({
+        notes: bassNotes,
+        instrument: 'bass',
+        bpm: userBPM,
+        timeSignature: userTimeSig,
+        folder,
+        filename: 'bass_di.wav',
+        gmProgram: instrumentPresets.bass
       })
+      if (!result.success) {
+        setGenerateError(result.error ?? 'Bass render failed.')
+        return
+      }
     }
 
     if (exportDrums && drums.loaded) {
+      setExportProgress({ percent: 75, message: 'Rendering drums...' })
       const scaledDrums = scaleNotes(drums.notes, drums.analysisResult!.bpm, userBPM)
-      const songLength =
-        scaledDrums.length > 0
-          ? scaledDrums.reduce((max, n) => Math.max(max, n.startTime + n.duration), 0)
-          : (60 / userBPM) * 16
-      const drumNotes = drumPatternToNotes(userBPM, drumStyle, songLength)
-      enhancedTasks.push({
-        name: 'Drums',
-        promise: window.api.renderInstrumentWavEnhanced({
-          notes: drumNotes,
-          instrument: 'drums',
-          bpm: userBPM,
-          timeSignature: userTimeSig,
-          folder,
-          filename: 'drum_track.wav',
-          drumKitVariation: instrumentPresets.drumKit
-        })
+      const result = await window.api.renderInstrumentWavEnhanced({
+        notes: scaledDrums,
+        instrument: 'drums',
+        bpm: userBPM,
+        timeSignature: userTimeSig,
+        folder,
+        filename: 'drum_track.wav',
+        drumKitVariation: instrumentPresets.drumKit
       })
+      if (!result.success) {
+        setGenerateError(result.error ?? 'Drum render failed.')
+        return
+      }
     }
 
-    setExportProgress({ percent: 10, message: 'Starting FluidSynth...' })
-
-    let completedCount = 0
-    const wrappedTasks = enhancedTasks.map(({ name, promise }) =>
-      promise.then((result) => {
-        completedCount++
-        setExportProgress({
-          percent: 10 + Math.floor((completedCount / enhancedTasks.length) * 80),
-          message: `Rendering ${name}...`
-        })
-        return result
-      })
-    )
-
-    const results = await Promise.all(wrappedTasks)
-    const failed = results.find((r) => !r.success)
-    if (failed) {
-      setGenerateError(failed.error ?? 'FluidSynth rendering failed.')
-      return
-    }
-
-    setExportProgress({ percent: 95, message: 'Writing files...' })
+    setExportProgress({ percent: 90, message: 'Writing session file...' })
 
     await window.api.writeTextFile({
       folder,
