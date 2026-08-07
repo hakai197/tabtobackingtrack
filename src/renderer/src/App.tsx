@@ -509,7 +509,7 @@ function App(): JSX.Element {
       const scaledDrums = scaleNotes(drums.notes, drums.analysisResult!.bpm, userBPM)
       const songLength =
         scaledDrums.length > 0
-          ? Math.max(...scaledDrums.map((n) => n.startTime + n.duration))
+          ? scaledDrums.reduce((max, n) => Math.max(max, n.startTime + n.duration), 0)
           : (60 / userBPM) * 16
       const drumNotes = drumPatternToNotes(userBPM, drumStyle, songLength)
       enhancedTasks.push({

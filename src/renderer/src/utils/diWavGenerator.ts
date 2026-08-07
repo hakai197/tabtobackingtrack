@@ -158,7 +158,7 @@ export async function generateDiWav(
 
   safeNotes.sort((a, b) => a.startTime - b.startTime)
 
-  const lastEnd = Math.max(...safeNotes.map((n) => n.startTime + n.duration))
+  const lastEnd = safeNotes.reduce((max, n) => Math.max(max, n.startTime + n.duration), 0)
   const totalSamples = Math.ceil((lastEnd + 0.5) * SAMPLE_RATE)
   const globalOutput = new Float32Array(totalSamples)
 

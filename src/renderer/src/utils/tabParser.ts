@@ -578,7 +578,7 @@ function parseGuitarBassTab(
   const uniqueLabels = [...new Set(allLabels)]
   const detectedKey = notes.length > 0 ? detectKey(notes) : undefined
   const estimatedDuration =
-    notes.length > 0 ? Math.max(...notes.map((n) => n.startTime + n.duration)) : 0
+    notes.length > 0 ? notes.reduce((max, n) => Math.max(max, n.startTime + n.duration), 0) : 0
 
   return {
     notes,
@@ -697,7 +697,7 @@ function parseDrumTab(
   }
 
   const estimatedDuration =
-    notes.length > 0 ? Math.max(...notes.map((n) => n.startTime + n.duration)) : 0
+    notes.length > 0 ? notes.reduce((max, n) => Math.max(max, n.startTime + n.duration), 0) : 0
 
   return {
     notes,

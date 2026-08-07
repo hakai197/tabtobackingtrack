@@ -121,7 +121,8 @@ export async function generateDrumDiWav(
   const secondsPerTick = 60 / (bpm * TICKS_PER_QUARTER)
   const barDuration = TICKS_PER_BAR * secondsPerTick
 
-  const lastEnd = notes.length > 0 ? Math.max(...notes.map((n) => n.startTime + n.duration)) : 0
+  const lastEnd =
+    notes.length > 0 ? notes.reduce((max, n) => Math.max(max, n.startTime + n.duration), 0) : 0
   const barCount = Math.max(1, Math.ceil(lastEnd / barDuration)) + 1
   const totalDuration = barCount * barDuration + 1.0
 

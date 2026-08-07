@@ -72,7 +72,7 @@ function createWindow(): void {
       submenu: [
         {
           label: 'Toggle DevTools',
-          accelerator: 'F12',
+          accelerator: 'CmdOrCtrl+Shift+I',
           click: () => {
             mainWindow?.webContents.toggleDevTools()
           }

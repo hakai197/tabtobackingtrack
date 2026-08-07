@@ -47,13 +47,18 @@ export async function renderMidiToWav(midiPath: string, outputPath: string): Pro
   const args = [
     '--quiet',
     '--no-shell',
-    '-a', 'null',
-    '-m', 'null',
-    '-r', '44100',
-    '--gain', '0.8',
-    '--fast-render', outputPath,
-    soundFontPath,   // SF2 must come before MIDI
-    midiPath         // MIDI file always last
+    '-a',
+    'null',
+    '-m',
+    'null',
+    '-r',
+    '44100',
+    '--gain',
+    '0.8',
+    '--fast-render',
+    outputPath,
+    soundFontPath, // SF2 must come before MIDI
+    midiPath // MIDI file always last
   ]
 
   const opts = {
@@ -83,12 +88,8 @@ export async function renderMidiToWav(midiPath: string, outputPath: string): Pro
     console.error('Output path:', outputPath)
 
     if (e.killed) {
-      throw new Error(
-        'FluidSynth render timed out. Try Standard mode for large files.'
-      )
+      throw new Error('FluidSynth render timed out. Try Standard mode for large files.')
     }
-    throw new Error(
-      `FluidSynth failed: ${e.stderr || e.message}`
-    )
+    throw new Error(`FluidSynth failed: ${e.stderr || e.message}`)
   }
 }

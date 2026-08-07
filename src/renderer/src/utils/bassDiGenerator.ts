@@ -61,18 +61,23 @@ type BassNote = { pitch: number; startTime: number; duration: number; velocity: 
 function extractChordSegments(notes: Note[], bpm: number): ChordSegment[] {
   if (notes.length === 0) return []
 
-  const onsets = [...new Set(notes.map((n) => n.startTime))].sort((a, b) => a - b)
+  const sorted = [...notes].sort((a, b) => a.startTime - b.startTime)
   const quarterSecs = 60 / bpm
   const segments: ChordSegment[] = []
 
-  for (let i = 0; i < onsets.length; i++) {
-    const t = onsets[i]
-    const nextT = i + 1 < onsets.length ? onsets[i + 1] : t + quarterSecs * 4
+  let i = 0
+  while (i < sorted.length) {
+    const t = sorted[i].startTime
+    const chord: Note[] = []
 
-    const chord = notes.filter((n) => Math.abs(n.startTime - t) < 0.002)
-    if (chord.length === 0) continue
+    while (i < sorted.length && Math.abs(sorted[i].startTime - t) < 0.002) {
+      chord.push(sorted[i])
+      i++
+    }
 
-    const lowestPitch = Math.min(...chord.map((n) => n.pitch))
+    const nextT = i < sorted.length ? sorted[i].startTime : t + quarterSecs * 4
+
+    const lowestPitch = chord.reduce((min, n) => Math.min(min, n.pitch), Infinity)
     const rootPitch = toBassRange(lowestPitch)
     const duration = nextT - t
     if (duration <= 0) continue
@@ -225,7 +230,10 @@ export async function generateBassDiWav(
 
   safeBassNotes.sort((a, b) => a.startTime - b.startTime)
 
-  const lastEnd = Math.max(...safeBassNotes.map((n) => n.startTime + n.duration), 0.5)
+  const lastEnd = Math.max(
+    safeBassNotes.reduce((max, n) => Math.max(max, n.startTime + n.duration), 0),
+    0.5
+  )
   const totalSamples = Math.ceil((lastEnd + 0.5) * SAMPLE_RATE)
   const globalOutput = new Float32Array(totalSamples)
 
