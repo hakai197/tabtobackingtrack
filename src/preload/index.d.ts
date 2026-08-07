@@ -61,6 +61,11 @@ declare global {
         filename: string
         content: string
       }) => Promise<WriteTextFileResult>
+      writeBinaryFile: (params: {
+        folder: string
+        filename: string
+        data: ArrayBuffer
+      }) => Promise<{ success: boolean; error?: string }>
       onUpdateAvailable: (
         callback: (info: { version: string; releaseNotes?: string }) => void
       ) => () => void

@@ -518,6 +518,8 @@ function App(): JSX.Element {
       return
     }
 
+    const midiEntries: Array<[string, ArrayBuffer]> = []
+
     setExportProgress({ percent: 10, message: 'Starting FluidSynth...' })
 
     // ── Guitar — one file per GP5 track if available ──────────
@@ -562,91 +564,125 @@ function App(): JSX.Element {
       }
     }
 
-    // ── Bass — one file per GP5 track if available ────────────
+    // ── Bass ──────────────────────────────────────────────────
     if (exportBass && bass.loaded) {
       const gpTracks = bass.gpTracks
-      if (gpTracks && gpTracks.length > 0) {
-        for (let i = 0; i < gpTracks.length; i++) {
-          const track = gpTracks[i]
-          const pct = 45 + Math.floor((i / gpTracks.length) * 20)
-          setExportProgress({ percent: pct, message: `Rendering ${track.name}...` })
-          const scaledTrack = scaleNotes(track.notes, bass.analysisResult!.bpm, userBPM)
+      if (exportMode === 'midi') {
+        if (gpTracks && gpTracks.length > 0) {
+          for (const track of gpTracks) {
+            const scaledTrack = scaleNotes(track.notes, bass.analysisResult!.bpm, userBPM)
+            midiEntries.push([
+              `${track.safeName}_bass.mid`,
+              generateBassMidi(userBPM, bassStyle, scaledTrack)
+            ])
+          }
+        } else {
+          const scaled = scaleNotes(bass.notes, bass.analysisResult!.bpm, userBPM)
+          midiEntries.push(['bass_track.mid', generateBassMidi(userBPM, bassStyle, scaled)])
+        }
+      } else {
+        if (gpTracks && gpTracks.length > 0) {
+          for (let i = 0; i < gpTracks.length; i++) {
+            const track = gpTracks[i]
+            const pct = 45 + Math.floor((i / gpTracks.length) * 20)
+            setExportProgress({ percent: pct, message: `Rendering ${track.name}...` })
+            const scaledTrack = scaleNotes(track.notes, bass.analysisResult!.bpm, userBPM)
+            const result = await window.api.renderInstrumentWavEnhanced({
+              notes: scaledTrack,
+              instrument: 'bass',
+              bpm: userBPM,
+              timeSignature: userTimeSig,
+              folder,
+              filename: `${track.safeName}_di.wav`,
+              gmProgram: instrumentPresets.bass
+            })
+            if (!result.success) {
+              setGenerateError(result.error ?? `${track.name} render failed.`)
+              return
+            }
+          }
+        } else {
+          setExportProgress({ percent: 50, message: 'Rendering bass...' })
+          const scaled = scaleNotes(bass.notes, bass.analysisResult!.bpm, userBPM)
           const result = await window.api.renderInstrumentWavEnhanced({
-            notes: scaledTrack,
+            notes: scaled,
             instrument: 'bass',
             bpm: userBPM,
             timeSignature: userTimeSig,
             folder,
-            filename: `${track.safeName}_di.wav`,
+            filename: 'bass_di.wav',
             gmProgram: instrumentPresets.bass
           })
           if (!result.success) {
-            setGenerateError(result.error ?? `${track.name} render failed.`)
+            setGenerateError(result.error ?? 'Bass render failed.')
             return
           }
-        }
-      } else {
-        setExportProgress({ percent: 50, message: 'Rendering bass...' })
-        const scaled = scaleNotes(bass.notes, bass.analysisResult!.bpm, userBPM)
-        const result = await window.api.renderInstrumentWavEnhanced({
-          notes: scaled,
-          instrument: 'bass',
-          bpm: userBPM,
-          timeSignature: userTimeSig,
-          folder,
-          filename: 'bass_di.wav',
-          gmProgram: instrumentPresets.bass
-        })
-        if (!result.success) {
-          setGenerateError(result.error ?? 'Bass render failed.')
-          return
         }
       }
     }
 
-    // ── Drums — one file per GP5 track if available ───────────
+    // ── Drums ─────────────────────────────────────────────────
     if (exportDrums && drums.loaded) {
       const gpTracks = drums.gpTracks
-      if (gpTracks && gpTracks.length > 0) {
-        for (let i = 0; i < gpTracks.length; i++) {
-          const track = gpTracks[i]
-          const pct = 70 + Math.floor((i / gpTracks.length) * 20)
-          setExportProgress({ percent: pct, message: `Rendering ${track.name}...` })
-          const scaledTrack = scaleNotes(track.notes, drums.analysisResult!.bpm, userBPM)
+      if (exportMode === 'midi') {
+        if (gpTracks && gpTracks.length > 0) {
+          for (const track of gpTracks) {
+            const scaledTrack = scaleNotes(track.notes, drums.analysisResult!.bpm, userBPM)
+            midiEntries.push([
+              `${track.safeName}_drum.mid`,
+              generateDrumMidi(userBPM, drumStyle, scaledTrack)
+            ])
+          }
+        } else {
+          const scaled = scaleNotes(drums.notes, drums.analysisResult!.bpm, userBPM)
+          midiEntries.push(['drum_track.mid', generateDrumMidi(userBPM, drumStyle, scaled)])
+        }
+      } else {
+        if (gpTracks && gpTracks.length > 0) {
+          for (let i = 0; i < gpTracks.length; i++) {
+            const track = gpTracks[i]
+            const pct = 70 + Math.floor((i / gpTracks.length) * 20)
+            setExportProgress({ percent: pct, message: `Rendering ${track.name}...` })
+            const scaledTrack = scaleNotes(track.notes, drums.analysisResult!.bpm, userBPM)
+            const result = await window.api.renderInstrumentWavEnhanced({
+              notes: scaledTrack,
+              instrument: 'drums',
+              bpm: userBPM,
+              timeSignature: userTimeSig,
+              folder,
+              filename: `${track.safeName}_drum.wav`,
+              drumKitVariation: instrumentPresets.drumKit
+            })
+            if (!result.success) {
+              setGenerateError(result.error ?? `${track.name} render failed.`)
+              return
+            }
+          }
+        } else {
+          setExportProgress({ percent: 75, message: 'Rendering drums...' })
+          const scaledDrums = scaleNotes(drums.notes, drums.analysisResult!.bpm, userBPM)
           const result = await window.api.renderInstrumentWavEnhanced({
-            notes: scaledTrack,
+            notes: scaledDrums,
             instrument: 'drums',
             bpm: userBPM,
             timeSignature: userTimeSig,
             folder,
-            filename: `${track.safeName}_drum.wav`,
+            filename: 'drum_track.wav',
             drumKitVariation: instrumentPresets.drumKit
           })
           if (!result.success) {
-            setGenerateError(result.error ?? `${track.name} render failed.`)
+            setGenerateError(result.error ?? 'Drum render failed.')
             return
           }
-        }
-      } else {
-        setExportProgress({ percent: 75, message: 'Rendering drums...' })
-        const scaledDrums = scaleNotes(drums.notes, drums.analysisResult!.bpm, userBPM)
-        const result = await window.api.renderInstrumentWavEnhanced({
-          notes: scaledDrums,
-          instrument: 'drums',
-          bpm: userBPM,
-          timeSignature: userTimeSig,
-          folder,
-          filename: 'drum_track.wav',
-          drumKitVariation: instrumentPresets.drumKit
-        })
-        if (!result.success) {
-          setGenerateError(result.error ?? 'Drum render failed.')
-          return
         }
       }
     }
 
-    setExportProgress({ percent: 90, message: 'Writing session file...' })
+    setExportProgress({ percent: 90, message: 'Writing files...' })
+
+    for (const [filename, data] of midiEntries) {
+      await window.api.writeBinaryFile({ folder, filename, data })
+    }
 
     await window.api.writeTextFile({
       folder,

@@ -203,6 +203,15 @@ app.whenReady().then(() => {
     }
   })
 
+  ipcMain.handle('write-binary-file', async (_event, params) => {
+    try {
+      await writeFile(join(params.folder, params.filename), Buffer.from(params.data))
+      return { success: true }
+    } catch (err) {
+      return { success: false, error: err instanceof Error ? err.message : 'Write failed' }
+    }
+  })
+
   // ── Auto-updater IPC ─────────────────────────────────────
   ipcMain.handle('start-update-download', () => {
     void autoUpdater.downloadUpdate()

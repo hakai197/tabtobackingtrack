@@ -9,6 +9,7 @@ const api = {
   renderInstrumentWavEnhanced: (params: unknown) =>
     ipcRenderer.invoke('render-instrument-wav-enhanced', params),
   writeTextFile: (params: unknown) => ipcRenderer.invoke('write-text-file', params),
+  writeBinaryFile: (params: unknown) => ipcRenderer.invoke('write-binary-file', params),
 
   onUpdateAvailable: (
     callback: (info: { version: string; releaseNotes?: string }) => void
